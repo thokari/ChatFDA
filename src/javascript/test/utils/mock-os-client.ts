@@ -20,6 +20,11 @@ export type MockOsClient = {
     index: Mock
     update: Mock
     get: Mock
+    count: Mock
+    indices: {
+        create: Mock
+        delete: Mock
+    }
 }
 
 export function createMockOsClient(): MockOsClient {
@@ -48,5 +53,19 @@ export function createMockOsClient(): MockOsClient {
             dbgLog('get()', arg)
             return { body: { _source: {} } }
         }),
+        count: vi.fn(async (arg: any) => {
+            dbgLog('count()', arg)
+            return { body: { count: 0 } }
+        }),
+        indices: {
+            create: vi.fn(async (arg: any) => {
+                dbgLog('indices.create()', arg)
+                return {}
+            }),
+            delete: vi.fn(async (arg: any) => {
+                dbgLog('indices.delete()', arg)
+                return {}
+            }),
+        },
     }
 }

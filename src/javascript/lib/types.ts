@@ -33,4 +33,9 @@ export interface OsLike {
     index(args: any): Promise<any>
     update(args: any): Promise<any>
     get(args: any): Promise<any>
+    count(args: any): Promise<any>
+    indices?: {
+        create?(args: any): Promise<any>
+        delete?(args: any): Promise<any>
+    }
 }

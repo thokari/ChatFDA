@@ -110,6 +110,21 @@ export async function runJob(jobId: string, deps: Deps = {}) {
             for (const c of secChunks) {
                 const text = c.text
                 const hash = sha256(`${c.section}\n${text}`)
+                const ofda = l.openfda ?? {}
+                const brand = ofda.brand_name ?? []
+                const gen = ofda.generic_name ?? []
+                const subs = ofda.substance_name ?? []
+                const routeArr = ofda.route ?? []
+                const dform = ofda.dosage_form ?? ofda.dosage_forms ?? []
+                const app = ofda.application_number ?? []
+                const pndc = ofda.product_ndc ?? []
+                const pkndc = ofda.package_ndc ?? []
+                const strength = ofda.active_ingredient ?? [] // often "CLOZAPINE 25 mg"
+                const display_name = [
+                  (brand[0] || gen[0] || "").trim(),
+                  strength[0] ? `(${strength[0]})` : "",
+                  routeArr[0] ? `[${routeArr[0]}]` : "",
+                ].filter(Boolean).join(" ")
                 chunks.push({
                     chunk_id: `${labelId}#${c.section}#${c.idx}`,
                     label_id: labelId,
@@ -121,12 +136,22 @@ export async function runJob(jobId: string, deps: Deps = {}) {
                     effective_time_num: effNumSafe,
                     effective_time_date: effDate,
                     openfda: {
-                        generic_name: l.openfda?.generic_name ?? [],
-                        manufacturer_name: l.openfda?.manufacturer_name ?? [],
-                        route: l.openfda?.route ?? [],
-                        product_type: l.openfda?.product_type ?? [],
-                        substance_name: l.openfda?.substance_name ?? []
-                    }
+                        brand_name: brand,
+                        generic_name: gen,
+                        manufacturer_name: ofda.manufacturer_name ?? [],
+                        route: routeArr,
+                        route_lc: routeArr.map((r: string) => r.toLowerCase()),
+                        product_type: ofda.product_type ?? [],
+                        substance_name: subs,
+                        substance_name_lc: subs.map((s: string) => s.toLowerCase()),
+                        dosage_form: dform,
+                        application_number: app,
+                        product_ndc: pndc,
+                        package_ndc: pkndc,
+                        active_ingredient: strength,
+                    },
+                    display_name,
+                    product_key: `${(gen[0]||brand[0]||"").toLowerCase()}|${(routeArr[0]||"").toLowerCase()}|${(dform[0]||"").toLowerCase()}`,
                 })
             }
         }

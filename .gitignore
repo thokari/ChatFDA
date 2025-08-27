@@ -7,3 +7,5 @@
 # local env files
 .env*.local
 .env
+
+.vscode/
