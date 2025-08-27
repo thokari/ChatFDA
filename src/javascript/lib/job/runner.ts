@@ -6,17 +6,7 @@ import { OpenAIEmbeddings } from "@langchain/openai"
 import { fetchFdaLabels } from "../fda-api.js"
 import { chunkSections } from "../chunking.js"
 import { osClientFromEnv, getJob, updateJob, heartbeat, logEvent, setStatus } from "./control.js"
-
-// optional DI surface used in tests
-type Fetcher = typeof fetchFdaLabels
-type Chunker = typeof chunkSections
-type Embedder = { embedDocuments(texts: string[]): Promise<number[][]> }
-
-// Make this structurally compatible with the OpenSearch Client
-interface OsLike {
-    bulk(args: { body: string } | any): Promise<any>
-    mget(args: { index: string, body: { ids: string[] } } | any): Promise<any>
-}
+import type { Chunker, Embedder, Fetcher, OsLike } from "../types.js"
 
 type Deps = {
     os?: OsLike

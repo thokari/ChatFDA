@@ -16,6 +16,7 @@ function dbgLog(msg: string, arg?: any) {
 export type MockOsClient = {
     bulk: Mock
     mget: Mock
+    search: Mock
     index: Mock
     update: Mock
     get: Mock
@@ -30,6 +31,10 @@ export function createMockOsClient(): MockOsClient {
         mget: vi.fn(async (arg: any) => {
             dbgLog('mget()', arg)
             return { body: { docs: [] } }
+        }),
+        search: vi.fn(async (arg: any) => {
+            dbgLog('search()', arg)
+            return { body: { hits: { hits: [] } } }
         }),
         index: vi.fn(async (arg: any) => {
             dbgLog('index()', arg)
