@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "knn": true
+    }
+  },
+  "mappings": {
+    "dynamic": true,
+    "properties": {
+      "chunk_id": { "type": "keyword" },
+      "label_id": { "type": "keyword" },
+      "set_id":   { "type": "keyword" },     
+
+      "section":  { "type": "keyword" },
+      "text":     { "type": "text" },
+
+      "embedding": {
+        "type": "knn_vector",
+        "dimension": 1536
+      },
+
+      "effective_time": { "type": "date", "format": "basic_date||strict_date_optional_time" },
+
+      "openfda": {
+        "properties": {
+          "generic_name":      { "type": "keyword" },
+          "manufacturer_name": { "type": "keyword" },
+          "route":             { "type": "keyword" },
+          "product_type":      { "type": "keyword" },
+          "substance_name":    { "type": "keyword" }
+        }
+      }
+    }
+  }
+}

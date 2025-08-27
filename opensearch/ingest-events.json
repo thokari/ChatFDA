@@ -1,0 +1,15 @@
+{
+  "settings": { "index": { "number_of_shards": 1, "number_of_replicas": 0 } },
+  "mappings": {
+    "properties": {
+      "ts": { "type": "date" },
+      "job_id": { "type": "keyword" },
+      "phase": { "type": "keyword" },
+      "label_id": { "type": "keyword" },
+      "chunk_id": { "type": "keyword" },
+      "level": { "type": "keyword" },
+      "message": { "type": "text" },
+      "meta": { "type": "flattened" }
+    }
+  }
+}
