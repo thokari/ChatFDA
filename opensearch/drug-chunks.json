@@ -18,7 +18,8 @@
 
       "embedding": {
         "type": "knn_vector",
-        "dimension": 1536
+        "dimension": 1536,
+        "method": { "name": "hnsw", "space_type": "cosinesimil", "engine": "nmslib" }
       },
 
       "effective_time": { "type": "date", "format": "basic_date||strict_date_optional_time" },

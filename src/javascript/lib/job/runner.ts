@@ -5,8 +5,9 @@ import pRetry from "p-retry"
 import { OpenAIEmbeddings } from "@langchain/openai"
 import { fetchFdaLabels } from "../fda-api.js"
 import { chunkSections } from "../chunking.js"
-import { osClientFromEnv, getJob, updateJob, heartbeat, logEvent, setStatus } from "./control.js"
+import { getJob, updateJob, heartbeat, logEvent, setStatus } from "./control.js"
 import type { Chunker, Embedder, Fetcher, OsLike } from "../types.js"
+import { osClientFromEnv } from "../os-client.js"
 
 type Deps = {
     os?: OsLike
@@ -20,7 +21,7 @@ const CHUNKS_INDEX = process.env.INDEX_CHUNKS || "drug-chunks"
 
 export async function runJob(jobId: string, deps: Deps = {}) {
     // Narrow to OsLike once; OpenSearch Client is structurally compatible for the methods we use
-    const os: OsLike = deps.os ?? (osClientFromEnv() as unknown as OsLike)
+    const os: OsLike = deps.os ?? osClientFromEnv()
     const fetcher = deps.fetcher ?? fetchFdaLabels
     const chunker = deps.chunker ?? chunkSections
     const embedder = deps.embedder ?? new OpenAIEmbeddings({ model: "text-embedding-3-small" })
@@ -184,13 +185,10 @@ export async function runJob(jobId: string, deps: Deps = {}) {
 
         // Progress + rough ETA for this loop
         const loopMs = Date.now() - tLoop0
-        const perLabelMs = loopMs / Math.max(1, labels.length)
         const total = job.params.total_expected
         if (typeof total === "number" && total > 0) {
-            const remaining = Math.max(0, total - job.counters.labels_seen)
-            const etaMin = Math.ceil((remaining * perLabelMs) / 60000)
             const pct = ((job.counters.labels_seen / total) * 100).toFixed(1)
-            console.log(`[progress] ${job.counters.labels_seen}/${total} labels (${pct}%) ETA ~${etaMin} min (loop ${loopMs}ms)`)
+            console.log(`[progress] ${job.counters.labels_seen}/${total} labels (${pct}%)`)
         } else {
             console.log(`[progress] labels_seen=${job.counters.labels_seen} (loop ${loopMs}ms)`)
         }

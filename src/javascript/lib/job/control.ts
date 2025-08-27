@@ -1,4 +1,4 @@
-import { Client } from "@opensearch-project/opensearch"
+import type { OsLike } from "../types.js"
 
 export type JobStatus = "PENDING" | "RUNNING" | "PAUSED" | "FAILED" | "COMPLETED"
 
@@ -39,18 +39,7 @@ export interface EventDoc {
     meta?: any
 }
 
-export function osClientFromEnv(): Client {
-    const node = process.env.OS_HOST || "https://localhost:9200"
-    const username = process.env.OS_USER || "admin"
-    const password = process.env.OS_PASS || ""
-    return new Client({
-        node,
-        auth: { username, password },
-        ssl: { rejectUnauthorized: false }, // dev only (self-signed)
-    })
-}
-
-export async function getJob(os: Client, jobId: string): Promise<JobDoc | null> {
+export async function getJob(os: OsLike, jobId: string): Promise<JobDoc | null> {
     try {
         const res = await os.get({ index: "ingest-jobs", id: jobId })
         // @ts-ignore
@@ -61,7 +50,7 @@ export async function getJob(os: Client, jobId: string): Promise<JobDoc | null> 
     }
 }
 
-export async function createJob(os: Client, jobId: string, params: JobParams): Promise<JobDoc> {
+export async function createJob(os: OsLike, jobId: string, params: JobParams): Promise<JobDoc> {
     const now = new Date().toISOString()
     const body: JobDoc = {
         job_id: jobId,
@@ -77,23 +66,23 @@ export async function createJob(os: Client, jobId: string, params: JobParams): P
     return body
 }
 
-export async function updateJob(os: Client, jobId: string, partial: Partial<JobDoc>) {
+export async function updateJob(os: OsLike, jobId: string, partial: Partial<JobDoc>) {
     await os.update({ index: "ingest-jobs", id: jobId, body: { doc: partial }, refresh: "true" })
     console.log(`Updated ${jobId}`)
 }
 
-export async function setStatus(os: Client, jobId: string, status: JobStatus) {
+export async function setStatus(os: OsLike, jobId: string, status: JobStatus) {
     await updateJob(os, jobId, { status, last_heartbeat: new Date().toISOString() })
     await logEvent(os, jobId, "INFO", "JOB", `Status -> ${status}`)
     console.log(`Job ${jobId} status set to ${status}`)
 }
 
-export async function heartbeat(os: Client, jobId: string) {
+export async function heartbeat(os: OsLike, jobId: string) {
     await updateJob(os, jobId, { last_heartbeat: new Date().toISOString() })
 }
 
 export async function logEvent(
-    os: Client,
+    os: OsLike,
     jobId: string,
     level: "INFO" | "WARN" | "ERROR",
     phase: "JOB" | "FETCH" | "EMBED" | "INDEX" | "OTHER",
