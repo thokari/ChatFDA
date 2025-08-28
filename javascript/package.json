@@ -1,0 +1,48 @@
+{
+  "name": "chat-fda",
+  "version": "0.1.0",
+    "description": "ChatFDA, a chat based RAG system to query data of the FDA",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "ask": "tsx src/scripts/ask.ts --q \"pregnancy safe pain reliever\" --topK 8",
+    "retrieve": "tsx src/scripts/retrieve.ts --q \"ibuprofen pregnancy\" --topK 8",
+    "scan:fields": "tsx src/scripts/scan-label-fields.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:int": "RUN_INT=1 vitest run -t \"integration\""
+  },
+  "author": "Thomas Hirsch",
+  "license": "ISC",
+  "dependencies": {
+    "next": "15.5.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "@langchain/openai": "^0.6.9",
+    "langchain": "^0.3.31",
+    "openai": "^5.15.0",
+    "@opensearch-project/opensearch": "^3.5.1",
+    "dotenv": "^17.2.1",
+    "commander": "^13.1.0",
+    "p-retry": "^6.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@types/node": "^20.14.9",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.2",
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tsx": "^4.16.0",
+    "tailwindcss": "^4",
+    "@tailwindcss/postcss": "^4",
+    "vite-tsconfig-paths": "^4.3.1"
+  }
+}

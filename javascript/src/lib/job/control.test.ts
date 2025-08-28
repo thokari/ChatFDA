@@ -8,7 +8,7 @@ import {
     heartbeat,
     logEvent,
     type JobParams
-} from '../../../lib/job/control.js'
+} from './control.js'
 
 function fakeClient() {
     return {

@@ -11,7 +11,7 @@ vi.mock('@langchain/openai', () => ({
 
 // Mock environment client
 const mockOsClientFromEnv = vi.fn()
-vi.mock('../../lib/os-client.js', () => ({
+vi.mock('./os-client.js', () => ({
     osClientFromEnv: mockOsClientFromEnv
 }))
 
@@ -63,7 +63,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', {
             os: customOs,
@@ -81,7 +81,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await retrieveWithInfo('test query')
 
@@ -96,7 +96,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await retrieveWithInfo('test query', {
             os: mockOs,
@@ -113,7 +113,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(2) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', { os: mockOs })
 
@@ -135,7 +135,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', { os: mockOs })
 
@@ -154,7 +154,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await retrieveWithInfo('test query', { os: mockOs, filter })
 
@@ -171,7 +171,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(10) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', { os: mockOs, topK })
 
@@ -185,7 +185,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await retrieveWithInfo('test query', { os: mockOs, highlight: true })
 
@@ -201,7 +201,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await retrieveWithInfo('test query', { os: mockOs, sourceFields })
 
@@ -221,7 +221,7 @@ describe('retriever', () => {
             body: { hits: { hits } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', {
             os: mockOs,
@@ -239,7 +239,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', {
             os: mockOs,
@@ -259,7 +259,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', {
             os: mockOs,
@@ -276,7 +276,7 @@ describe('retriever', () => {
     it('returns empty results when all strategies fail', async () => {
         mockOs.search.mockRejectedValue(new Error('All strategies failed'))
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', { os: mockOs })
 
@@ -287,7 +287,7 @@ describe('retriever', () => {
     it('throws error when specific strategy fails', async () => {
         mockOs.search.mockRejectedValue(new Error('knn_query failed'))
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await expect(
             retrieveWithInfo('test query', { os: mockOs, strategy: 'knn_query' })
@@ -303,7 +303,7 @@ describe('retriever', () => {
             }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', { os: mockOs })
         expect(result.hits).toHaveLength(1)
@@ -316,7 +316,7 @@ describe('retriever', () => {
             took: 15
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         const result = await retrieveWithInfo('test query', { os: mockOs })
         expect(result.hits).toHaveLength(1)
@@ -334,7 +334,7 @@ describe('retriever', () => {
             body: { hits: { hits: createMockHits(1) } }
         })
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await retrieveWithInfo('test query', { os: mockOs })
 
@@ -351,7 +351,7 @@ describe('retriever', () => {
             embedDocuments: vi.fn().mockResolvedValue([null])
         }
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await expect(
             retrieveWithInfo('test query', { os: mockOs, embedder: badEmbedder })
@@ -361,7 +361,7 @@ describe('retriever', () => {
     it('propagates embedding API errors', async () => {
         mockEmbedDocuments.mockRejectedValue(new Error('Embedding API failed'))
 
-        const { retrieveWithInfo } = await import('../../lib/retriever.js')
+        const { retrieveWithInfo } = await import('./retriever.js')
 
         await expect(
             retrieveWithInfo('test query', { os: mockOs, embedder: mockEmbedder })

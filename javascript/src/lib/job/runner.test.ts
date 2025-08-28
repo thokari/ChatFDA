@@ -15,7 +15,7 @@ const logEventMock = vi.fn()
 const setStatusMock = vi.fn()
 
 // Only mock the control module since we're injecting everything else
-vi.mock('../../../lib/job/control.js', () => ({
+vi.mock('./control.js', () => ({
     getJob: getJobMock,
     updateJob: updateJobMock,
     heartbeat: heartbeatMock,
@@ -103,7 +103,7 @@ describe('runner', () => {
         getJobMock.mockResolvedValueOnce(runningJob('job_0'))
         fetchFdaLabelsMock.mockResolvedValueOnce(emptyPage())
 
-        const { runJob } = await import('../../../lib/job/runner.js')
+        const { runJob } = await import('./runner.js')
 
         await runJob('job_0', {
             os: mockOs,
@@ -140,7 +140,7 @@ describe('runner', () => {
         // Second page is empty to end the loop
         fetchFdaLabelsMock.mockResolvedValueOnce(emptyPage())
 
-        const { runJob } = await import('../../../lib/job/runner.js')
+        const { runJob } = await import('./runner.js')
 
         await runJob('job_1', {
             os: mockOs,
@@ -212,7 +212,7 @@ describe('runner', () => {
         // End-of-feed
         fetchFdaLabelsMock.mockResolvedValueOnce(emptyPage())
 
-        const { runJob } = await import('../../../lib/job/runner.js')
+        const { runJob } = await import('./runner.js')
 
         await runJob('job_2', {
             os: mockOs,

@@ -4,12 +4,12 @@ import {
     chunkSections,
     ALLOWLIST,
     DEFAULT_MIN_SECTION_LEN,
-} from "../../lib/chunking.js"
+} from "./chunking.js"
 
 type Doc = Record<string, unknown>
 
 function loadSample(): Doc {
-    const url = new URL("../../../../samples/boxed_warning_sample.json", import.meta.url)
+    const url = new URL("../../../samples/boxed_warning_sample.json", import.meta.url)
     const json = JSON.parse(readFileSync(url, "utf-8"))
     return (json.results?.[0] as Doc) ?? {}
 }
