@@ -2,13 +2,15 @@
   "compilerOptions": {
     // Modern target for Next API routes and CLI (top‑level await, etc.)
     "target": "ES2022",
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
     // ESM + bundler resolution (Next default)
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",
-
     // Quality-of-life and safety
     "strict": true,
     "skipLibCheck": true,
@@ -17,22 +19,28 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "incremental": true,
-
     // Test + Node globals available everywhere (simple path)
-    "types": ["vitest/globals", "node"],
-
+    "types": [
+      "vitest/globals",
+      "node"
+    ],
     // Aliases (so `@/lib/...` works in API routes and scripts)
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-
     // Extra strictness
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
-
     // Next plugin
-    "plugins": [{ "name": "next" }]
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
@@ -43,5 +51,7 @@
     "postcss.config.*",
     "tailwind.config.*"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

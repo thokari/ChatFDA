@@ -1,6 +1,6 @@
 import { OpenAIEmbeddings } from "@langchain/openai"
-import type { Embedder, OsLike } from "./types.js"
-import { osClientFromEnv } from "./os-client.js"
+import type { Embedder, OsLike } from "./types"
+import { osClientFromEnv } from "./os-client"
 
 export type RetrieveOptions = {
     os?: OsLike
