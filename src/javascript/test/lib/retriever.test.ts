@@ -11,7 +11,7 @@ vi.mock('@langchain/openai', () => ({
 
 // Mock environment client
 const mockOsClientFromEnv = vi.fn()
-vi.mock('../../../lib/os-client.js', () => ({
+vi.mock('../../lib/os-client.js', () => ({
     osClientFromEnv: mockOsClientFromEnv
 }))
 
@@ -46,7 +46,7 @@ describe('retriever', () => {
         mockOs = createMockOsClient()
         mockEmbedder = { embedDocuments: mockEmbedDocuments }
         mockOsClientFromEnv.mockReturnValue(mockOs)
-        
+
         // Default embedding response
         mockEmbedDocuments.mockResolvedValue([Array(1536).fill(0.01)])
     })
@@ -58,7 +58,7 @@ describe('retriever', () => {
     it('uses provided OpenSearch client and embedder', async () => {
         const customOs = createMockOsClient()
         const customEmbedder = { embedDocuments: vi.fn().mockResolvedValue([Array(1536).fill(0.02)]) }
-        
+
         customOs.search.mockResolvedValue({
             body: { hits: { hits: createMockHits(1) } }
         })
@@ -119,7 +119,7 @@ describe('retriever', () => {
 
         expect(result.strategy).toBe('knn_query')
         expect(mockOs.search).toHaveBeenCalledTimes(1)
-        
+
         const searchCall = mockOs.search.mock.calls[0]?.[0]
         expect(searchCall.body.query.knn).toBeDefined()
         expect(searchCall.body.query.knn.embedding.vector).toHaveLength(1536)
@@ -129,7 +129,7 @@ describe('retriever', () => {
     it('falls back to next strategy when first fails', async () => {
         // First call (knn_query) fails
         mockOs.search.mockRejectedValueOnce(new Error('knn_query not supported'))
-        
+
         // Second call (knn) succeeds
         mockOs.search.mockResolvedValueOnce({
             body: { hits: { hits: createMockHits(1) } }
@@ -141,7 +141,7 @@ describe('retriever', () => {
 
         expect(result.strategy).toBe('knn')
         expect(mockOs.search).toHaveBeenCalledTimes(2)
-        
+
         // Second call should use top-level knn
         const secondCall = mockOs.search.mock.calls[1]?.[0]
         expect(secondCall.body.knn).toBeDefined()
@@ -206,7 +206,7 @@ describe('retriever', () => {
         await retrieveWithInfo('test query', { os: mockOs, sourceFields })
 
         const searchCall = mockOs.search.mock.calls[0]?.[0]
-        expect(searchCall.body._source).toEqual(sourceFields)
+        expect(searchCall.body._source).toEqual({includes: sourceFields, excludes: ['embedding']})
     })
 
     it('deduplicates by label when maxPerLabel is set', async () => {
@@ -216,16 +216,16 @@ describe('retriever', () => {
             { _id: '3', _score: 0.7, _source: { set_id: 'set_B', text: 'content 3' } },
             { _id: '4', _score: 0.6, _source: { set_id: 'set_A', text: 'content 4' } }
         ]
-        
+
         mockOs.search.mockResolvedValue({
             body: { hits: { hits } }
         })
 
         const { retrieveWithInfo } = await import('../../lib/retriever.js')
 
-        const result = await retrieveWithInfo('test query', { 
-            os: mockOs, 
-            maxPerLabel: 1 
+        const result = await retrieveWithInfo('test query', {
+            os: mockOs,
+            maxPerLabel: 1
         })
 
         // Should only return first hit from each set_id
@@ -241,14 +241,14 @@ describe('retriever', () => {
 
         const { retrieveWithInfo } = await import('../../lib/retriever.js')
 
-        const result = await retrieveWithInfo('test query', { 
-            os: mockOs, 
-            strategy: 'script' 
+        const result = await retrieveWithInfo('test query', {
+            os: mockOs,
+            strategy: 'script'
         })
 
         expect(result.strategy).toBe('script')
         expect(mockOs.search).toHaveBeenCalledTimes(1)
-        
+
         const searchCall = mockOs.search.mock.calls[0]?.[0]
         expect(searchCall.body.query.script_score).toBeDefined()
         expect(searchCall.body.query.script_score.script.source).toContain('cosineSimilarity')
@@ -261,13 +261,13 @@ describe('retriever', () => {
 
         const { retrieveWithInfo } = await import('../../lib/retriever.js')
 
-        const result = await retrieveWithInfo('test query', { 
-            os: mockOs, 
-            strategy: 'text' 
+        const result = await retrieveWithInfo('test query', {
+            os: mockOs,
+            strategy: 'text'
         })
 
         expect(result.strategy).toBe('text')
-        
+
         const searchCall = mockOs.search.mock.calls[0]?.[0]
         expect(searchCall.body.query.match).toBeDefined()
         expect(searchCall.body.query.match.text).toBe('test query')
@@ -347,8 +347,8 @@ describe('retriever', () => {
 
     it('throws error when embedding returns empty vector', async () => {
         // Mock embedder that returns empty/null vector
-        const badEmbedder = { 
-            embedDocuments: vi.fn().mockResolvedValue([null]) 
+        const badEmbedder = {
+            embedDocuments: vi.fn().mockResolvedValue([null])
         }
 
         const { retrieveWithInfo } = await import('../../lib/retriever.js')

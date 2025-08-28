@@ -17,8 +17,8 @@ export type FetcherPage<TLabel = any> = {
 
 export type Fetcher = (p: FetcherParams) => Promise<FetcherPage>
 
-export type Chunk = { section: string; text: string; idx: number }
 export type Chunker = (labels: any[]) => Promise<Chunk[]>
+export type Chunk = { section: string; text: string; idx: number }
 
 export type Embedder = {
     embedDocuments(texts: string[]): Promise<number[][]>

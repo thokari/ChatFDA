@@ -1,4 +1,6 @@
 import type { OsLike } from "../types.js"
+import { readFileSync } from "node:fs"
+import { resolve as resolvePath } from "node:path"
 
 export type JobStatus = "PENDING" | "RUNNING" | "PAUSED" | "FAILED" | "COMPLETED"
 
@@ -106,4 +108,73 @@ export function makeJobId(p: JobParams) {
     const route = (p.route || "ALL").toUpperCase()
     const since = p.updatedSince ? `_${p.updatedSince}` : ""
     return `job_${d}_${ing}_${route}${since}_L${p.limit}`
+}
+
+export function encOpenFdaValue(v: string): string {
+    const trimmed = String(v || "").trim()
+    const needsQuotes = /\s/.test(trimmed)
+    return encodeURIComponent(needsQuotes ? `"${trimmed}"` : trimmed)
+}
+
+export function buildOpenFdaSearch(opts: { ingredient?: string; route?: string; updatedSince?: string }) {
+    const parts: string[] = []
+    if (opts.ingredient) parts.push(`openfda.substance_name:${encOpenFdaValue(opts.ingredient)}`)
+    if (opts.route) parts.push(`openfda.route:${encOpenFdaValue(opts.route)}`)
+    if (opts.updatedSince) parts.push(`effective_time:[${encodeURIComponent(opts.updatedSince)}+TO+*]`)
+    return parts.join("+AND+")
+}
+
+export async function openFdaPreflight(opts: { ingredient: string; route: string; updatedSince?: string }) {
+    const search = buildOpenFdaSearch(opts)
+    const url = `https://api.fda.gov/drug/label.json?search=${search}&limit=1`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`openFDA preflight failed: HTTP ${res.status}`)
+    const json: any = await res.json()
+    const total = Number(json?.meta?.results?.total || 0)
+    const sampleId: string | undefined = json?.results?.[0]?.id
+    return { total, sampleId }
+}
+
+export async function preflightTotal(opts: { ingredient: string; route: string; updatedSince?: string }) {
+    const { total } = await openFdaPreflight(opts)
+    return total
+}
+
+export function parseSeedsCsv(filePath: string): Array<{ ingredient: string; route: string }> {
+    const abs = resolvePath(process.cwd(), filePath)
+    const txt = readFileSync(abs, "utf-8")
+    const lines = txt.split(/\r?\n/).filter((l) => l.trim().length > 0)
+    if (lines.length === 0) return []
+    const header = lines[0]!.split(",").map((h) => h.trim().toLowerCase())
+    const idxIng = header.indexOf("ingredient")
+    const idxRoute = header.indexOf("route")
+    if (idxIng === -1 || idxRoute === -1) {
+        throw new Error(`CSV must have "ingredient,route" header: ${filePath}`)
+    }
+    const rows: Array<{ ingredient: string; route: string }> = []
+    if (lines.length < 1) {
+        throw new Error(`CSV is empty: ${filePath}`)
+    }
+    for (let i = 1; i < lines.length; i++) {
+        const raw = lines[i]!.trim()
+        if (!raw || raw.startsWith("#")) continue
+        const cols = raw.split(",")
+        const ingredient = (cols[idxIng] || "").trim()
+        const route = (cols[idxRoute] || "").trim()
+        if (ingredient && route) rows.push({ ingredient, route })
+    }
+    return rows
+}
+
+export async function ensureJob(os: OsLike, params: JobParams): Promise<{ jobId: string; existed: boolean }> {
+    const jobId = makeJobId(params)
+    const existing = await getJob(os, jobId)
+    if (existing) {
+        await setStatus(os, jobId, "RUNNING")
+        return { jobId, existed: true }
+    } else {
+        await createJob(os, jobId, params)
+        await logEvent(os, jobId, "INFO", "JOB", "Started", params)
+        return { jobId, existed: false }
+    }
 }

@@ -1,25 +1,12 @@
 #!/usr/bin/env ts-node
 import "dotenv/config"
 import { Command } from "commander"
-import { makeJobId, createJob, getJob, setStatus, logEvent, type JobParams } from "./control.js"
+import { makeJobId, getJob, setStatus, type JobParams, preflightTotal, openFdaPreflight, ensureJob, parseSeedsCsv } from "./control.js"
 import { runJob } from "./runner.js"
 import { osClientFromEnv } from "../os-client.js";
 
-// Quick openFDA preflight (uses openfda.substance_name and openfda.route)
-async function checkOpenFda(opts: { ingredient: string; route: string; updatedSince?: string }) {
-    const parts: string[] = []
-    if (opts.ingredient) parts.push(`openfda.substance_name:${encodeURIComponent(opts.ingredient)}`)
-    if (opts.route) parts.push(`openfda.route:${encodeURIComponent(opts.route)}`)
-    if (opts.updatedSince) parts.push(`effective_time:[${opts.updatedSince}+TO+*]`)
-    const search = parts.join("+AND+")
-    const url = `https://api.fda.gov/drug/label.json?search=${search}&limit=1`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`openFDA check failed: HTTP ${res.status}`)
-    const json: any = await res.json()
-    const total = json?.meta?.results?.total ?? 0
-    const sampleId = json?.results?.[0]?.id
-    return { total, sampleId }
-}
+// Quick openFDA preflight now comes from control.ts
+// Removed local checkOpenFda/preflightTotal helpers
 
 function jobIdFromOpts(opts: any): string {
     if (opts.id) return String(opts.id)
@@ -31,18 +18,6 @@ function jobIdFromOpts(opts: any): string {
         ...(opts.updatedSince ? { updatedSince: String(opts.updatedSince) } : {})
     }
     return makeJobId(params)
-}
-
-async function preflightTotal(opts: { ingredient: string; route: string; updatedSince?: string }) {
-    const q: string[] = []
-    if (opts.ingredient) q.push(`openfda.substance_name:${encodeURIComponent(opts.ingredient)}`)
-    if (opts.route) q.push(`openfda.route:${encodeURIComponent(opts.route)}`)
-    if (opts.updatedSince) q.push(`effective_time:[${opts.updatedSince}+TO+*]`)
-    const url = `https://api.fda.gov/drug/label.json?search=${q.join("+AND+")}&limit=1`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`openFDA preflight failed: HTTP ${res.status}`)
-    const json: any = await res.json()
-    return Number(json?.meta?.results?.total || 0)
 }
 
 const program = new Command()
@@ -60,7 +35,7 @@ program
     .action(async (opts) => {
         const ingredient = String(opts.ingredient).toUpperCase()
         const route = String(opts.route).toUpperCase()
-        const { total, sampleId } = await checkOpenFda({ ingredient, route, updatedSince: opts.updatedSince })
+        const { total, sampleId } = await openFdaPreflight({ ingredient, route, updatedSince: opts.updatedSince })
         console.log(`openFDA: ${total} label(s) for ${ingredient} route=${route}${opts.updatedSince ? " since " + opts.updatedSince : ""}${sampleId ? `, e.g. id=${sampleId}` : ""}`)
     })
 
@@ -87,7 +62,6 @@ program
         const route = String(opts.route).toUpperCase()
         const limit = Math.min(Math.max(Number(opts.limit ?? 100), 1), 1000)
 
-        // preflight to set total_expected
         T("calling openFDA preflight…")
         const total = await preflightTotal({ ingredient, route, updatedSince: opts.updatedSince })
         T(`openFDA preflight done (total=${total})`)
@@ -99,24 +73,66 @@ program
 
         const params: JobParams = {
             ingredient: String(opts.ingredient),
-            route: String(opts.route).toUpperCase(),
+            route: route,
             limit,
-            ...(opts.updatedSince !== undefined ? { updatedSince: String(opts.updatedSince) } : {})
+            ...(opts.updatedSince !== undefined ? { updatedSince: String(opts.updatedSince) } : {}),
+            ...(total ? { total_expected: total } : {})
         }
 
-        const jobId = makeJobId(params)
-        T(`checking job in OpenSearch (id=${jobId})…`)
-        const existing = await getJob(os, jobId)
-        if (existing) {
-            console.log(`Job exists: ${jobId} (status=${existing.status}). Resuming…`)
-            await setStatus(os, jobId, "RUNNING")
-        } else {
-            await createJob(os, jobId, params)
-            await logEvent(os, jobId, "INFO", "JOB", "Started", params)
-            console.log(`Started ${jobId}`)
-        }
+        const { jobId } = await ensureJob(os, params)
         T("starting runner…")
         await runJob(jobId)
+    })
+
+program
+    .command("start-batch")
+    .requiredOption("--file <path>", "CSV with header: ingredient,route")
+    .option("--updatedSince <YYYYMMDD>", "effective_time lower bound (applies to all)")
+    .option("--limit <n>", "page size (1..1000)", (v) => parseInt(v, 10), 100)
+    .option("-v, --verbose", "verbose progress logs")
+    .action(async (opts) => {
+        const seeds = parseSeedsCsv(String(opts.file))
+        if (seeds.length === 0) {
+            console.log(`No seeds found in ${opts.file}`)
+            return
+        }
+        const os = osClientFromEnv()
+        console.log(`Starting batch for ${seeds.length} seed(s) from ${opts.file}`)
+
+        for (const { ingredient, route } of seeds) {
+            const t0 = Date.now()
+            const T = (msg: string) => {
+                if (!opts.verbose) return
+                const dt = ((Date.now() - t0) / 1000).toFixed(2)
+                console.log(`[${ingredient.toUpperCase()}/${route.toUpperCase()} t+${dt}s] ${msg}`)
+            }
+            try {
+                T("preflight…")
+                const total = await preflightTotal({
+                    ingredient: String(ingredient).toUpperCase(),
+                    route: String(route).toUpperCase(),
+                    updatedSince: opts.updatedSince
+                })
+                if (total === 0) {
+                    console.log(`[preflight] 0 total labels for ${ingredient} route=${route}. Skipping.`)
+                    continue
+                }
+                console.log(`[preflight] ${total} total labels for ${ingredient} route=${route}${opts.updatedSince ? ` since ${opts.updatedSince}` : ""}`)
+                const params: JobParams = {
+                    ingredient: String(ingredient),
+                    route: String(route).toUpperCase(),
+                    limit: Math.min(Math.max(Number(opts.limit ?? 100), 1), 1000),
+                    ...(opts.updatedSince ? { updatedSince: String(opts.updatedSince) } : {}),
+                    ...(total ? { total_expected: total } : {})
+                }
+                const { jobId } = await ensureJob(os, params)
+                T("running…")
+                await runJob(jobId)
+            } catch (e: any) {
+                console.error(`Error on ${ingredient}/${route}: ${e?.message || e}`)
+            }
+        }
+        console.log("Batch complete.")
     })
 
 program

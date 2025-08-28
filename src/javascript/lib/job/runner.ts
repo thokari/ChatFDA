@@ -3,11 +3,11 @@ import "dotenv/config"
 import crypto from "node:crypto"
 import pRetry from "p-retry"
 import { OpenAIEmbeddings } from "@langchain/openai"
+import type { Chunker, Embedder, Fetcher, OsLike } from "../types.js"
 import { fetchFdaLabels } from "../fda-api.js"
 import { chunkSections } from "../chunking.js"
-import { getJob, updateJob, heartbeat, logEvent, setStatus } from "./control.js"
-import type { Chunker, Embedder, Fetcher, OsLike } from "../types.js"
 import { osClientFromEnv } from "../os-client.js"
+import { getJob, updateJob, heartbeat, logEvent, setStatus } from "./control.js"
 
 type Deps = {
     os?: OsLike
@@ -119,11 +119,11 @@ export async function runJob(jobId: string, deps: Deps = {}) {
                 const app = ofda.application_number ?? []
                 const pndc = ofda.product_ndc ?? []
                 const pkndc = ofda.package_ndc ?? []
-                const strength = ofda.active_ingredient ?? [] // often "CLOZAPINE 25 mg"
+                const strength = ofda.active_ingredient ?? []
                 const display_name = [
-                  (brand[0] || gen[0] || "").trim(),
-                  strength[0] ? `(${strength[0]})` : "",
-                  routeArr[0] ? `[${routeArr[0]}]` : "",
+                    (brand[0] || gen[0] || "").trim(),
+                    strength[0] ? `(${strength[0]})` : "",
+                    routeArr[0] ? `[${routeArr[0]}]` : "",
                 ].filter(Boolean).join(" ")
                 chunks.push({
                     chunk_id: `${labelId}#${c.section}#${c.idx}`,
@@ -151,7 +151,7 @@ export async function runJob(jobId: string, deps: Deps = {}) {
                         active_ingredient: strength,
                     },
                     display_name,
-                    product_key: `${(gen[0]||brand[0]||"").toLowerCase()}|${(routeArr[0]||"").toLowerCase()}|${(dform[0]||"").toLowerCase()}`,
+                    product_key: `${(gen[0] || brand[0] || "").toLowerCase()}|${(routeArr[0] || "").toLowerCase()}|${(dform[0] || "").toLowerCase()}`,
                 })
             }
         }

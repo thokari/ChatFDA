@@ -51,13 +51,14 @@ export async function retrieveWithInfo(
 
     const strategies: Array<{ name: string; body: any }> = []
 
+    const sourceFilter = { includes: _source, excludes: ["embedding"] }
     // Prefer query-level kNN first; supports your cluster and returns hits
     if (allow("knn_query")) strategies.push({
         name: "knn_query",
         body: {
             size: topK,
             query: knnQueryWithFilter(vec, topK, opts.filter),
-            _source,
+            _source: sourceFilter,
             highlight,
         }
     })
@@ -74,7 +75,7 @@ export async function retrieveWithInfo(
                 num_candidates: numCandidates,
                 filter: toKnnFilter(opts.filter),
             },
-            _source,
+            _source: sourceFilter,
             highlight,
         }
     })
@@ -90,7 +91,7 @@ export async function retrieveWithInfo(
                     script: { source: "cosineSimilarity(params.q, 'embedding') + 1.0", params: { q: vec } },
                 },
             },
-            _source,
+            _source: sourceFilter,
             highlight,
         }
     })
@@ -101,7 +102,7 @@ export async function retrieveWithInfo(
         body: {
             size: topK,
             query: withFilter(opts.filter, { match: { text: query } }),
-            _source,
+            _source: sourceFilter,
             highlight,
         }
     })
