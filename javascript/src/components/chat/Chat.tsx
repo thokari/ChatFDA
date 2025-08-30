@@ -12,10 +12,11 @@ export default function Chat() {
     const [messages, setMessages] = useState<Msg[]>([])
     const [input, setInput] = useState("")
     const [loading, setLoading] = useState(false)
-    const scrollRef = useRef<HTMLDivElement>(null)
+    // Scroll to the latest content without forcing a tall inner box
+    const endRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+        endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
     }, [messages])
 
     async function ask(q: string) {
@@ -79,30 +80,39 @@ export default function Chat() {
     }
 
     return (
-        <div className="mx-auto max-w-3xl w-full h-[90vh] flex flex-col gap-3">
-            <div ref={scrollRef} className="flex-1 overflow-y-auto border rounded-md p-3">
+        <div className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-6">
+            {/* Messages stack; allow the page to scroll naturally */}
+            <div className="space-y-4">
                 {messages.map((m, i) => (
-                    <div key={i}>
+                    <div key={i} className="">
                         <ChatMessage role={m.role} content={m.content} />
                         {m.role === "assistant" && m.meta?.citations && (
-                            <CitationList hits={m.meta.citations} />
+                            <>
+                                <h3 className="mt-6 font-semibold text-slate-800">Sources used for this response</h3>
+                                <CitationList hits={m.meta.citations} />
+                            </>
                         )}
                     </div>
                 ))}
-                {loading && <div className="text-sm text-gray-500 px-2 py-1">Thinking…</div>}
+                {loading && <div className="text-sm text-blue-700/70 px-2 py-1">Thinking…</div>}
+                <div ref={endRef} />
             </div>
-            <ChatInput
-                value={input}
-                onChange={setInput}
-                disabled={loading}
-                onSubmit={() => {
-                    const q = input.trim()
-                    if (!q) return
-                    setMessages(m => [...m, { role: "user", content: q }])
-                    setInput("")
-                    void ask(q)
-                }}
-            />
+
+            {/* Input: center vertically when empty; otherwise sits below content */}
+            <div className={messages.length === 0 ? "min-h-[50vh] flex items-center" : "mt-4"}>
+                <ChatInput
+                    value={input}
+                    onChange={setInput}
+                    disabled={loading}
+                    onSubmit={() => {
+                        const q = input.trim()
+                        if (!q) return
+                        setMessages(m => [...m, { role: "user", content: q }])
+                        setInput("")
+                        void ask(q)
+                    }}
+                />
+            </div>
         </div>
     )
 }

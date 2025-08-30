@@ -20,6 +20,7 @@ export type CitationHit = {
             generic_name?: string[]
             product_ndc?: string[]
             application_number?: string[]
+            product_type?: string[]
         }
     }
 }
@@ -41,9 +42,15 @@ export function CitationCard({ hit }: { hit: CitationHit }) {
     const section = humanizeSection(src.section)
     const date = src.effective_time_date || src.effective_time
     const rawText = src.text ?? ""
+    const rxOtc = (() => {
+        const pt = first(src.openfda?.product_type)?.toLowerCase() || ""
+        if (pt.includes("otc")) return "OTC"
+        if (pt.includes("prescription")) return "PRESCRIPTION"
+        return undefined
+    })()
 
     const [expanded, setExpanded] = React.useState(false)
-    const maxChars = 300
+    const maxChars = 400
     const isTruncated = rawText.length > maxChars
     const shown = expanded ? rawText : (isTruncated ? rawText.slice(0, maxChars) + "…" : rawText)
 
@@ -52,40 +59,51 @@ export function CitationCard({ hit }: { hit: CitationHit }) {
     }
 
     return (
-        <article className="rounded-xl border bg-white shadow-sm p-4 space-y-3">
+        <article className="rounded-lg border bg-white shadow-sm p-3 space-y-2">
             <header className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold">{brand}</h3>
-                {mfg && <span className="text-xs text-gray-600">• {mfg}</span>}
-                {route && <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{route}</span>}
+                <h3 className="text-sm font-semibold text-sky-900">{brand}</h3>
+                {mfg && <span className="text-[11px] text-gray-600">• {mfg}</span>}
+                <div className="ml-auto flex items-center gap-1">
+                    {rxOtc && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
+                            {rxOtc}
+                        </span>
+                    )}
+                    {route && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                            {route}
+                        </span>
+                    )}
+                </div>
             </header>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100">
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-50 text-sky-800 text-[11px]">
                     <span className="font-medium">{section}</span>
                 </span>
-                {date && <span className="px-2 py-0.5 rounded bg-gray-50">Effective {date}</span>}
+                {date && (
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-gray-50 text-gray-700 border border-gray-100">
+                        {date}
+                    </span>
+                )}
             </div>
 
-            <div className="rounded-lg border bg-gray-50">
-                <div className="px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap">
-                    {shown}
-                </div>
-                <div className="flex items-center justify-between px-3 py-2">
-                    <div className="flex gap-2">
-                        {isTruncated && (
-                            <button
-                                className="text-xs text-blue-600 hover:underline"
-                                onClick={() => setExpanded(v => !v)}
-                                aria-expanded={expanded}
-                            >
-                                {expanded ? "Show less" : "Show more"}
-                            </button>
-                        )}
-                        <button className="text-xs text-gray-600 hover:underline" onClick={copyExcerpt}>
-                            Copy excerpt
-                        </button>
-                    </div>
-                </div>
+            <div className="text-[13px] leading-relaxed whitespace-pre-wrap text-slate-800 border-l-4 border-sky-200 bg-sky-100/50 px-3 py-2">
+                {shown}
+            </div>
+            <div className="flex items-center gap-3 pl-1">
+                {isTruncated && (
+                    <button
+                        className="text-[11px] text-sky-700 hover:underline"
+                        onClick={() => setExpanded(v => !v)}
+                        aria-expanded={expanded}
+                    >
+                        {expanded ? "Show less" : "Show more"}
+                    </button>
+                )}
+                <button className="text-[11px] text-gray-600 hover:underline" onClick={copyExcerpt}>
+                    Copy excerpt
+                </button>
             </div>
         </article>
     )

@@ -10,7 +10,7 @@ export type AnswerOptions = {
     maxPerLabel?: number
 }
 
-const promptFilePath = fileURLToPath(new URL("./system-prompt.md", import.meta.url))
+const promptFilePath = fileURLToPath(new URL("./answerer-prompt.md", import.meta.url))
 let promptCache: string
 
 async function getSystemPrompt(): Promise<string> {
