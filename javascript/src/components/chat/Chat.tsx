@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react"
 import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
 import { CitationList } from "@/components/citations/CitationList"
+import { readSse, type SseEvent } from "@/utils/sse"
+import { addMissingSentenceSpaces } from "@/utils/text"
 
 type Msg = { role: "user" | "assistant"; content: string; meta?: any }
 
@@ -19,13 +21,56 @@ export default function Chat() {
     async function ask(q: string) {
         setLoading(true)
         try {
-            const res = await fetch("/api/ask", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ q, topK: 8 })
-            })
-            const data = await res.json()
-            setMessages(m => [...m, { role: "assistant", content: data.answer ?? "No answer", meta: { citations: data.citations, strategy: data.strategy } }])
+            const useStream = true
+            if (!useStream) {
+                const res = await fetch("/api/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ q, topK: 8 })
+                })
+                const data = await res.json()
+                setMessages(m => [...m, { role: "assistant", content: data.answer ?? "No answer", meta: { citations: data.citations, strategy: data.strategy } }])
+            } else {
+                const res = await fetch("/api/ask/stream", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ q, topK: 8 })
+                })
+                if (!res.body) throw new Error("No stream")
+                let answer = ""
+                let citations: any[] | undefined
+                let strategy: any | undefined
+                for await (const ev of readSse(res.body) as AsyncIterable<SseEvent>) {
+                    if (ev.type === "retrieval") strategy = ev.data?.strategy
+                    if (ev.type === "token") {
+                        const piece = typeof ev.data === "string" ? ev.data : ""
+                        answer += piece
+                        const smoothed = addMissingSentenceSpaces(answer)
+                        // Optimistically render partial answer
+                        setMessages(m => {
+                            const last = m[m.length - 1]
+                            // Avoid appending too many interim entries; coalesce last assistant message
+                            if (last?.role === "assistant") {
+                                const copy = m.slice()
+                                copy[copy.length - 1] = { ...last, content: smoothed }
+                                return copy
+                            }
+                            return [...m, { role: "assistant", content: smoothed }]
+                        })
+                    }
+                    if (ev.type === "citations") citations = ev.data as any[]
+                }
+                // Finalize
+                setMessages(m => {
+                    const last = m[m.length - 1]
+                    if (last?.role === "assistant") {
+                        const copy = m.slice()
+                        copy[copy.length - 1] = { ...last, content: addMissingSentenceSpaces(answer), meta: { citations, strategy } }
+                        return copy
+                    }
+                    return [...m, { role: "assistant", content: addMissingSentenceSpaces(answer), meta: { citations, strategy } }]
+                })
+            }
         } catch (e: any) {
             setMessages(m => [...m, { role: "assistant", content: "Request failed. Please try again." }])
         } finally {

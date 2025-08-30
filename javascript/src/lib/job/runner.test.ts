@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createMockOsClient } from '../../utils/mock-os-client.js'
+import { createMockOsClient } from '@/utils/mock-os-client.js'
 import crypto from 'node:crypto'
 
 // Mock functions for dependencies
@@ -167,7 +167,7 @@ describe('runner', () => {
         expect(secondBulkCall.body).toContain('do not exceed dose')
 
         // Should have called embedDocuments for the chunk
-        expect(embedDocumentsMock).toHaveBeenCalledWith(['do not exceed dose'])
+        expect(embedDocumentsMock).toHaveBeenCalledWith(['[Section: Warnings] do not exceed dose'])
 
         // Should have updated the job
         expect(updateJobMock).toHaveBeenCalled()

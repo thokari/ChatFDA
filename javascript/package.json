@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:int": "RUN_INT=1 vitest run -t \"integration\""
+    "test:int": "RUN_INT=1 vitest run -t \"integration\"",
+    "ingest:batch": "tsx -r tsconfig-paths/register src/lib/job/cli.ts start-batch --file ../seeds/drug-seeds-10.csv --limit 100 --updatedSince 20240101 -v"
   },
   "author": "Thomas Hirsch",
   "license": "ISC",

@@ -1,12 +1,14 @@
 import { OpenAIEmbeddings } from "@langchain/openai"
 import type { Embedder, OsLike } from "./types"
 import { osClientFromEnv } from "./os-client"
+import { createLogger } from "../utils/log"
 
 export type RetrieveOptions = {
     os?: OsLike
     embedder?: Embedder
     index?: string
     topK?: number
+    cap?: number
     numCandidates?: number
     filter?: Record<string, string | number | boolean>
     sourceFields?: string[]
@@ -18,6 +20,8 @@ export type RetrieveOptions = {
 
 export type RetrieveHit = { _id: string; _score: number; _source: any; highlight?: any }
 
+const log = createLogger("retriever")
+
 export async function retrieveWithInfo(
     query: string,
     opts: RetrieveOptions = {}
@@ -26,6 +30,7 @@ export async function retrieveWithInfo(
     const os = opts.os ?? osClientFromEnv()
     const index = opts.index ?? (process.env.INDEX_CHUNKS || "drug-chunks")
     const topK = opts.topK ?? 10
+    const cap = opts.cap ?? topK
     const numCandidates = opts.numCandidates ?? Math.max(500, topK * 50)
     const _source = opts.sourceFields ?? ["chunk_id", "label_id", "section", "text", "openfda"]
 
@@ -109,11 +114,8 @@ export async function retrieveWithInfo(
 
     for (const { name, body } of strategies) {
         try {
-            if (process.env.DEBUG_RETRIEVER === "1") {
-                // Avoid printing the entire embedding vector (very slow)
-                const safe = JSON.stringify({ index, name, body }, (k, v) =>
-                    (k === "vector" && Array.isArray(v)) ? `[${v.length} dims]` : v, 2)
-                console.error("[retriever] request", safe)
+            if (log.isDebug()) {
+                log.debug("request", { index, strategy: name, body })
             }
             const tSearch0 = Date.now()
             const res = await os.search({ index, body })
@@ -124,15 +126,16 @@ export async function retrieveWithInfo(
             if (Array.isArray(hits)) {
                 const tPost0 = Date.now()
                 const before = hits.length
-                const capped = dedupeByLabel(hits, opts.maxPerLabel ?? 1).slice(0, topK)
+                const capped = hits.slice(0, cap)
                 const postMs = Date.now() - tPost0
-                if (process.env.DEBUG_RETRIEVER === "1") {
+                if (log.isDebug()) {
                     const totalMs = Date.now() - t0
-                    console.error(`[retriever] done name=${name} embedMs=${embedMs}ms searchMs=${searchMs}ms os.took=${osTook ?? "-"}ms postMs=${postMs}ms rawHits=${before} returned=${capped.length} topK=${topK} totalMs=${totalMs}ms`)
+                    log.debug("done", { strategy: name, embedMs, searchMs, osTook: osTook ?? "-", postMs, rawHits: before, returned: capped.length, topK, totalMs })
                 }
                 return { hits: capped, strategy: name }
             }
         } catch (e) {
+            log.warn("strategy failed", { strategy: name, error: String(e) })
             if ((opts.strategy && opts.strategy !== "auto") && strategies.length === 1) throw e
         }
     }

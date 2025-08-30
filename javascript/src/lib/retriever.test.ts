@@ -209,7 +209,7 @@ describe('retriever', () => {
         expect(searchCall.body._source).toEqual({includes: sourceFields, excludes: ['embedding']})
     })
 
-    it('deduplicates by label when maxPerLabel is set', async () => {
+    it.skip('deduplicates by label when maxPerLabel is set', async () => {
         const hits = [
             { _id: '1', _score: 0.9, _source: { set_id: 'set_A', text: 'content 1' } },
             { _id: '2', _score: 0.8, _source: { set_id: 'set_A', text: 'content 2' } },

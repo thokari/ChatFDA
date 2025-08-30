@@ -1,6 +1,9 @@
 import type { OsLike } from "../types.js"
 import { readFileSync } from "node:fs"
 import { resolve as resolvePath } from "node:path"
+import { createLogger } from "../../utils/log"
+
+const log = createLogger("control")
 
 export type JobStatus = "PENDING" | "RUNNING" | "PAUSED" | "FAILED" | "COMPLETED"
 
@@ -44,7 +47,6 @@ export interface EventDoc {
 export async function getJob(os: OsLike, jobId: string): Promise<JobDoc | null> {
     try {
         const res = await os.get({ index: "ingest-jobs", id: jobId })
-        // @ts-ignore
         return res.body?._source ?? (res as any)._source ?? null
     } catch (e: any) {
         if (e?.meta?.statusCode === 404) return null
@@ -64,19 +66,19 @@ export async function createJob(os: OsLike, jobId: string, params: JobParams): P
         last_heartbeat: now,
     }
     await os.index({ index: "ingest-jobs", id: jobId, body, refresh: "true" })
-    console.log(`Created job ${jobId}`)
+    log.info(`Created job ${jobId}`)
     return body
 }
 
 export async function updateJob(os: OsLike, jobId: string, partial: Partial<JobDoc>) {
     await os.update({ index: "ingest-jobs", id: jobId, body: { doc: partial }, refresh: "true" })
-    console.log(`Updated ${jobId}`)
+    log.debug(`Updated ${jobId}`)
 }
 
 export async function setStatus(os: OsLike, jobId: string, status: JobStatus) {
     await updateJob(os, jobId, { status, last_heartbeat: new Date().toISOString() })
     await logEvent(os, jobId, "INFO", "JOB", `Status -> ${status}`)
-    console.log(`Job ${jobId} status set to ${status}`)
+    log.info(`Job ${jobId} status set to ${status}`)
 }
 
 export async function heartbeat(os: OsLike, jobId: string) {
@@ -100,6 +102,8 @@ export async function logEvent(
         meta,
     }
     await os.index({ index: "ingest-events", body: doc, refresh: "false" })
+    // keep external log noise minimal; rely on events index
+    if (level === "ERROR") log.error(`[event] ${phase} ${message}`)
 }
 
 export function makeJobId(p: JobParams) {
