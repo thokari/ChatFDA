@@ -102,7 +102,6 @@ export async function logEvent(
         meta,
     }
     await os.index({ index: "ingest-events", body: doc, refresh: "false" })
-    // keep external log noise minimal; rely on events index
     if (level === "ERROR") log.error(`[event] ${phase} ${message}`)
 }
 

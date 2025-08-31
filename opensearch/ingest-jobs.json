@@ -2,19 +2,19 @@
   "settings": { "index": { "number_of_shards": 1, "number_of_replicas": 0 } },
   "mappings": {
     "properties": {
-      "job_id": { "type": "keyword" },
-      "created_at": { "type": "date" },
-      "params": { "type": "object", "enabled": true },
-      "status": { "type": "keyword" },
+      "job_id":         { "type": "keyword" },
+      "created_at":     { "type": "date" },
+      "params":         { "type": "object", "enabled": true },
+      "status":         { "type": "keyword" },
       "last_heartbeat": { "type": "date" },
-      "cursor": { "type": "object", "properties": { "skip": { "type": "integer" } } },
+      "cursor":         { "type": "object", "properties": { "skip": { "type": "integer" } } },
       "counters": {
         "type": "object",
         "properties": {
-          "labels_seen": { "type": "integer" },
+          "labels_seen":       { "type": "integer" },
           "chunks_considered": { "type": "integer" },
-          "chunks_embedded": { "type": "integer" },
-          "errors": { "type": "integer" }
+          "chunks_embedded":   { "type": "integer" },
+          "errors":            { "type": "integer" }
         }
       }
     }

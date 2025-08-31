@@ -98,9 +98,8 @@ export async function runJob(jobId: string, deps: Deps = {}) {
         const chunks: any[] = []
         let totalSecChunks = 0
         const tChunk0 = Date.now()
-        for (const l of labels) {
+    for (const l of labels) {
             const labelId = l.id
-            const setId = l.set_id || (l.openfda?.spl_set_id?.[0] ?? null)
             const eff = l.effective_time || null
             const effNum = typeof eff === "string" ? parseInt(eff, 10) : (typeof eff === "number" ? eff : NaN)
             const effNumSafe = Number.isFinite(effNum) ? effNum : null
@@ -132,7 +131,6 @@ export async function runJob(jobId: string, deps: Deps = {}) {
                 chunks.push({
                     chunk_id: `${labelId}#${c.section}#${c.idx}`,
                     label_id: labelId,
-                    set_id: setId,
                     section: c.section,
                     text,
                     hash,
@@ -335,7 +333,6 @@ function buildChunkDoc(label: any, c: ChunkItem) {
     }
 }
 
-// Wherever you currently embed with pRetry in your runner:
 export async function indexChunksBatch(os: any, embedder: { embedDocuments: (docs: string[]) => Promise<number[][]> }, labelSource: any, chunks: ChunkItem[]) {
     if (!chunks.length) return
 
@@ -366,16 +363,12 @@ export async function indexChunksBatch(os: any, embedder: { embedDocuments: (doc
     await os.bulk({ refresh: false, body })
 }
 
-// Info-level only for progress and embedding; helpers:
 function logEmbedBatch(start: number, end: number, size: number, ms: number) {
     const rate = ms > 0 ? +(size / (ms / 1000)).toFixed(1) : 0
-    // Plain string, no JSON/meta
     log.info(`[embed] batch ${start}-${end} size=${size} took ${ms}ms (${rate}/s)`)
 }
 
 function logProgress(done: number, total: number, label: string) {
     const pct = Math.floor((done / Math.max(1, total)) * 100)
-    // Plain string, no JSON/meta
     log.info(`[progress] ${label} ${done}/${total} (${pct}%)`)
 }
-

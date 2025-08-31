@@ -10,7 +10,6 @@ export type CitationHit = {
         text?: string
         effective_time_date?: string
         effective_time?: string
-        set_id?: string
         label_id?: string
         chunk_id?: string
         openfda?: {

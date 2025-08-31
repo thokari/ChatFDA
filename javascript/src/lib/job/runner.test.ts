@@ -57,7 +57,6 @@ function pageWithLabel() {
     return {
         results: [{
             id: 'L1',
-            set_id: 'S1',
             effective_time: '20240101',
             openfda: {
                 generic_name: ['IBUPROFEN'],

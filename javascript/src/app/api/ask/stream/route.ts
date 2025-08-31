@@ -22,10 +22,10 @@ function sseEncode(event: string | null, data: any) {
 }
 
 export async function POST(req: NextRequest) {
-    const { q, topK = 8 } = await req.json().catch(() => ({}))
+    const { q } = await req.json().catch(() => ({}))
     if (!q || typeof q !== "string") return new Response("q is required", { status: 400 })
 
-    const { hits, strategy } = await retrieveWithInfo(q, { topK, highlight: false, sourceFields: ["*"] })
+    const { hits, strategy } = await retrieveWithInfo(q, { highlight: false, sourceFields: ["*"] })
 
     const stream = new ReadableStream<Uint8Array>({
         async start(controller) {

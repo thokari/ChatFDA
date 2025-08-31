@@ -8,9 +8,6 @@ import { createLogger } from "../../utils/log.js"
 
 const log = createLogger("cli")
 
-// Quick openFDA preflight now comes from control.ts
-// Removed local checkOpenFda/preflightTotal helpers
-
 function jobIdFromOpts(opts: any): string {
     if (opts.id) return String(opts.id)
     const ingredient = String(opts.ingredient ?? "").toUpperCase()
@@ -50,24 +47,12 @@ program
     .option("--limit <n>", "page size (1..1000)", (v) => parseInt(v, 10), 100)
     .option("-v, --verbose", "verbose progress logs")
     .action(async (opts) => {
-        const t0 = Date.now()
-        const T = (msg: string, meta?: unknown) => {
-            if (!opts.verbose) return
-            const dt = ((Date.now() - t0) / 1000).toFixed(2)
-            log.debug(`[t+${dt}s] ${msg}`, meta)
-        }
-        T("bootstrapping CLI…")
-
         const os = osClientFromEnv()
-        T("OpenSearch client initialized")
-
         const ingredient = String(opts.ingredient).toUpperCase()
         const route = String(opts.route).toUpperCase()
         const limit = Math.min(Math.max(Number(opts.limit ?? 100), 1), 1000)
 
-        T("calling openFDA preflight…")
         const total = await preflightTotal({ ingredient, route, updatedSince: opts.updatedSince })
-        T("openFDA preflight done", { total })
         if (total === 0) {
             log.info(`No labels found on openFDA for ${ingredient} route=${route}. Aborting.`)
             return
@@ -83,7 +68,7 @@ program
         }
 
         const { jobId } = await ensureJob(os, params)
-        T("starting runner…", { jobId })
+        log.info("Starting runner", { jobId })
         await runJob(jobId)
     })
 
@@ -106,13 +91,7 @@ program
             const t0 = Date.now()
             const ING = ingredient.toUpperCase()
             const ROUTE = route.toUpperCase()
-            const T = (msg: string, meta?: unknown) => {
-                if (!opts.verbose) return
-                const dt = ((Date.now() - t0) / 1000).toFixed(2)
-                log.debug(`[${ING}/${ROUTE} t+${dt}s] ${msg}`, meta)
-            }
             try {
-                T("preflight…")
                 const total = await preflightTotal({
                     ingredient: ING,
                     route: ROUTE,
@@ -131,7 +110,7 @@ program
                     ...(total ? { total_expected: total } : {})
                 }
                 const { jobId } = await ensureJob(os, params)
-                T("running…", { jobId })
+                log.info("Running job", { jobId })
                 await runJob(jobId)
             } catch (e: any) {
                 log.error(`Error on ${ingredient}/${route}: ${e?.message || e}`)

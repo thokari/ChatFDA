@@ -8,21 +8,21 @@
   "mappings": {
     "dynamic": true,
     "properties": {
-      "id": { "type": "keyword" },
-      "set_id": { "type": "keyword" },
+      "id":             { "type": "keyword" },
+      "set_id":         { "type": "keyword" },
       "effective_time": { "type": "date", "format": "basic_date||strict_date_optional_time" },
       "openfda": {
         "properties": {
-          "brand_name": { "type": "keyword" },
-          "generic_name": { "type": "keyword" },
-          "manufacturer_name": { "type": "keyword" },
-          "route": { "type": "keyword" },
-          "product_type": { "type": "keyword" },
-          "substance_name": { "type": "keyword" },
-          "rxcui": { "type": "keyword" },
+          "brand_name":         { "type": "keyword" },
+          "generic_name":       { "type": "keyword" },
+          "manufacturer_name":  { "type": "keyword" },
+          "route":              { "type": "keyword" },
+          "product_type":       { "type": "keyword" },
+          "substance_name":     { "type": "keyword" },
+          "rxcui":              { "type": "keyword" },
           "application_number": { "type": "keyword" },
-          "spl_id": { "type": "keyword" },
-          "spl_set_id": { "type": "keyword" }
+          "spl_id":             { "type": "keyword" },
+          "spl_set_id":         { "type": "keyword" }
         }
       }
     }

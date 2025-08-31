@@ -74,21 +74,20 @@ export async function fetchFdaLabels(opts: FdaSearchOpts): Promise<FdaPage> {
 }
 
 function buildQuery(o: { ingredient?: string, route?: string, updatedSince?: string, limit: number, skip: number }): string {
-  const terms: string[] = []
-  if (o.ingredient) {
-    const q = `"${o.ingredient}"` // quote to handle spaces
-    terms.push(`(openfda.generic_name:${q} OR openfda.substance_name:${q})`)
-  }
-  if (o.route) terms.push(`openfda.route:"${o.route}"`)
-  // BUG WAS HERE: used +TO+ which became %2B in the URL
-  if (o.updatedSince) terms.push(`effective_time:[${o.updatedSince} TO *]`)
+    const terms: string[] = []
+    if (o.ingredient) {
+        const q = `"${o.ingredient}"` // quote to handle spaces
+        terms.push(`(openfda.generic_name:${q} OR openfda.substance_name:${q})`)
+    }
+    if (o.route) terms.push(`openfda.route:"${o.route}"`)
+    if (o.updatedSince) terms.push(`effective_time:[${o.updatedSince} TO *]`)
 
-  const params = new URLSearchParams()
-  if (terms.length) params.set("search", terms.join(" AND "))
-  params.set("limit", String(o.limit))
-  params.set("skip", String(o.skip))
-  params.set("sort", "effective_time:desc")
-  return params.toString()
+    const params = new URLSearchParams()
+    if (terms.length) params.set("search", terms.join(" AND "))
+    params.set("limit", String(o.limit))
+    params.set("skip", String(o.skip))
+    params.set("sort", "effective_time:desc")
+    return params.toString()
 }
 
 async function fetchJsonWithRetry(url: string, opts: { timeoutMs: number, retries: number }) {
@@ -97,10 +96,8 @@ async function fetchJsonWithRetry(url: string, opts: { timeoutMs: number, retrie
     return pRetry(async () => {
         const ac = new AbortController()
         const to = setTimeout(() => ac.abort(), timeoutMs)
-
         try {
             const res = await fetch(url, { signal: ac.signal })
-
             if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
                 const retryAfter = res.headers.get("retry-after")
                 const meta = { url, url_pretty: prettyUrl(url), search: urlSearch(url), status: res.status }
@@ -115,14 +112,12 @@ async function fetchJsonWithRetry(url: string, opts: { timeoutMs: number, retrie
                 }
                 throw new Error(`Retryable HTTP ${res.status}`)
             }
-
             if (!res.ok) {
                 const text = await res.text().catch(() => "")
                 const body = text.slice(0, 500)
                 log.error("http_error", { url_pretty: prettyUrl(url), search: urlSearch(url), status: res.status, body })
                 throw new AbortError(`HTTP ${res.status}: ${body}`)
             }
-
             return await res.json()
         } catch (err: any) {
             log.warn("network_error", { url_pretty: prettyUrl(url), search: urlSearch(url), error: String(err?.message || err) })
@@ -133,10 +128,10 @@ async function fetchJsonWithRetry(url: string, opts: { timeoutMs: number, retrie
     }, { retries })
 }
 
-// Helpers to make logs readable
 function prettyUrl(u: string): string {
     try { return decodeURI(u) } catch { return u }
 }
+
 function urlSearch(u: string): string | undefined {
     try {
         const qs = new URL(u).searchParams.get("search")

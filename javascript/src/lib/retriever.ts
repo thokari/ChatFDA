@@ -3,6 +3,8 @@ import type { Embedder, OsLike } from "./types"
 import { osClientFromEnv } from "./os-client"
 import { createLogger } from "../utils/log"
 
+export const DEFAULT_TOPK = 12
+
 export type RetrieveOptions = {
     os?: OsLike
     embedder?: Embedder
@@ -29,7 +31,7 @@ export async function retrieveWithInfo(
     const t0 = Date.now()
     const os = opts.os ?? osClientFromEnv()
     const index = opts.index ?? (process.env.INDEX_CHUNKS || "drug-chunks")
-    const topK = opts.topK ?? 10
+    const topK = opts.topK ?? DEFAULT_TOPK
     const cap = opts.cap ?? topK
     const numCandidates = opts.numCandidates ?? Math.max(500, topK * 50)
     const _source = opts.sourceFields ?? ["chunk_id", "label_id", "section", "text", "openfda"]
@@ -166,19 +168,4 @@ function knnQueryWithFilter(vec: number[], k: number, filter?: Record<string, an
     if (!filter || Object.keys(filter).length === 0) return knn
     const terms = Object.entries(filter).map(([k, v]) => ({ term: { [k]: v } }))
     return { bool: { must: [knn], filter: terms } }
-}
-
-function dedupeByLabel(hits: RetrieveHit[], maxPerLabel: number): RetrieveHit[] {
-    if (maxPerLabel <= 0) return hits
-    const seen: Record<string, number> = {}
-    const out: RetrieveHit[] = []
-    for (const h of hits) {
-        const id = h._source?.set_id ?? h._source?.product_key ?? h._source?.label_id ?? ""
-        const n = seen[id] ?? 0
-        if (n < maxPerLabel) {
-            out.push(h)
-            seen[id] = n + 1
-        }
-    }
-    return out
 }

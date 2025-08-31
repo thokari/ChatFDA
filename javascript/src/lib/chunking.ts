@@ -53,8 +53,8 @@ export type ChunkMeta = {
 }
 
 export type StoredChunk = {
-    text: string               // verbatim
-    section: string            // e.g., "dosage_and_administration"
+    text: string
+    section: string
     display_name?: string
     effective_time?: string
     effective_time_num?: number
@@ -114,9 +114,7 @@ export async function chunkSections(
     return out
 }
 
-/**
- * Embedding-only prefix for section; stored text stays verbatim.
- */
+// Embedding-only prefix for section. Stored text stays verbatim.
 export function embeddingTextForChunk(text: string, meta: ChunkMeta) {
     const sec = humanizeSection(meta.section)
     return `[Section: ${sec}] ${text}`

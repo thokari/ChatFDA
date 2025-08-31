@@ -12,7 +12,6 @@
       "chunk_id": { "type": "keyword" },
       "label_id": { "type": "keyword" },
       "set_id":   { "type": "keyword" },     
-
       "section":  { "type": "keyword" },
       "text":     { "type": "text" },
 
@@ -23,7 +22,7 @@
       },
 
       "effective_time": { "type": "date", "format": "basic_date||strict_date_optional_time" },
-
+      
       "openfda": {
         "properties": {
           "generic_name":      { "type": "keyword" },

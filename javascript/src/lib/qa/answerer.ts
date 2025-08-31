@@ -26,10 +26,10 @@ async function getSystemPrompt(): Promise<string> {
 export function buildContext(hits: RetrieveHit[], opts: AnswerOptions = {}): string {
     const maxPerLabel = opts.maxPerLabel ?? 1
 
-    // Group by label (prefer set_id if present)
+    // Group by label (use label_id; set_id is not reliable)
     const byLabel = new Map<string, RetrieveHit[]>()
     for (const h of hits) {
-        const k = h._source?.set_id ?? h._source?.label_id ?? h._id
+        const k = h._source?.label_id ?? h._id
         const arr = byLabel.get(k) ?? []
         if (arr.length < maxPerLabel) arr.push(h)
         byLabel.set(k, arr)

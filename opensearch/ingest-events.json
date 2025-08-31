@@ -9,14 +9,14 @@
       { "meta_dates":   { "path_match": "meta.*", "match_mapping_type": "date",   "mapping": { "type": "date" } } }
     ],
     "properties": {
-      "ts": { "type": "date" },
-      "job_id": { "type": "keyword" },
-      "phase": { "type": "keyword" },
+      "ts":       { "type": "date" },
+      "job_id":   { "type": "keyword" },
+      "phase":    { "type": "keyword" },
       "label_id": { "type": "keyword" },
       "chunk_id": { "type": "keyword" },
-      "level": { "type": "keyword" },
-      "message": { "type": "text" },
-      "meta": { "type": "object", "enabled": true, "dynamic": true }
+      "level":    { "type": "keyword" },
+      "message":  { "type": "text" },
+      "meta":     { "type": "object", "enabled": true, "dynamic": true }
     }
   }
 }

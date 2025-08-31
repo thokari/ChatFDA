@@ -1,18 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createMockOsClient, type MockOsClient } from '../utils/mock-os-client.js'
+import { createMockOsClient, type MockOsClient } from '@/utils/mock-os-client.js'
+import { DEFAULT_TOPK } from './retriever.js'
 
-// Mock the OpenAI embeddings
-const mockEmbedDocuments = vi.fn()
-vi.mock('@langchain/openai', () => ({
-    OpenAIEmbeddings: vi.fn().mockImplementation(() => ({
-        embedDocuments: mockEmbedDocuments
-    }))
+// Hoisted mocks to satisfy Vitest's mock factory hoisting
+const { mockEmbedDocuments } = vi.hoisted(() => ({
+    mockEmbedDocuments: vi.fn(),
 }))
 
-// Mock environment client
-const mockOsClientFromEnv = vi.fn()
+vi.mock('@langchain/openai', () => ({
+    OpenAIEmbeddings: vi.fn().mockImplementation(() => ({
+        embedDocuments: mockEmbedDocuments,
+    })),
+}))
+
+const { mockOsClientFromEnv } = vi.hoisted(() => ({
+    mockOsClientFromEnv: vi.fn(),
+}))
+
 vi.mock('./os-client.js', () => ({
-    osClientFromEnv: mockOsClientFromEnv
+    osClientFromEnv: mockOsClientFromEnv,
 }))
 
 function createMockHits(count: number = 2) {
@@ -22,7 +28,6 @@ function createMockHits(count: number = 2) {
         _source: {
             chunk_id: `chunk_${i}`,
             label_id: `label_${i}`,
-            set_id: `set_${i}`,
             section: 'warnings',
             text: `This is chunk ${i} content`,
             openfda: {
@@ -123,7 +128,7 @@ describe('retriever', () => {
         const searchCall = mockOs.search.mock.calls[0]?.[0]
         expect(searchCall.body.query.knn).toBeDefined()
         expect(searchCall.body.query.knn.embedding.vector).toHaveLength(1536)
-        expect(searchCall.body.query.knn.embedding.k).toBe(10)
+        expect(searchCall.body.query.knn.embedding.k).toBe(DEFAULT_TOPK)
     })
 
     it('falls back to next strategy when first fails', async () => {
@@ -206,15 +211,15 @@ describe('retriever', () => {
         await retrieveWithInfo('test query', { os: mockOs, sourceFields })
 
         const searchCall = mockOs.search.mock.calls[0]?.[0]
-        expect(searchCall.body._source).toEqual({includes: sourceFields, excludes: ['embedding']})
+        expect(searchCall.body._source).toEqual({ includes: sourceFields, excludes: ['embedding'] })
     })
 
-    it.skip('deduplicates by label when maxPerLabel is set', async () => {
+    it.skip('deduplicates by label_id when maxPerLabel is set', async () => {
         const hits = [
-            { _id: '1', _score: 0.9, _source: { set_id: 'set_A', text: 'content 1' } },
-            { _id: '2', _score: 0.8, _source: { set_id: 'set_A', text: 'content 2' } },
-            { _id: '3', _score: 0.7, _source: { set_id: 'set_B', text: 'content 3' } },
-            { _id: '4', _score: 0.6, _source: { set_id: 'set_A', text: 'content 4' } }
+            { _id: '1', _score: 0.9, _source: { label_id: 'L_A', text: 'content 1' } },
+            { _id: '2', _score: 0.8, _source: { label_id: 'L_A', text: 'content 2' } },
+            { _id: '3', _score: 0.7, _source: { label_id: 'L_B', text: 'content 3' } },
+            { _id: '4', _score: 0.6, _source: { label_id: 'L_A', text: 'content 4' } }
         ]
 
         mockOs.search.mockResolvedValue({
@@ -228,10 +233,10 @@ describe('retriever', () => {
             maxPerLabel: 1
         })
 
-        // Should only return first hit from each set_id
+        // Should only return first hit from each label_id
         expect(result.hits).toHaveLength(2)
-        expect(result.hits[0]!._source.set_id).toBe('set_A')
-        expect(result.hits[1]!._source.set_id).toBe('set_B')
+        expect(result.hits[0]!._source.label_id).toBe('L_A')
+        expect(result.hits[1]!._source.label_id).toBe('L_B')
     })
 
     it('forces specific strategy when requested', async () => {
