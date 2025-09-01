@@ -214,31 +214,6 @@ describe('retriever', () => {
         expect(searchCall.body._source).toEqual({ includes: sourceFields, excludes: ['embedding'] })
     })
 
-    it.skip('deduplicates by label_id when maxPerLabel is set', async () => {
-        const hits = [
-            { _id: '1', _score: 0.9, _source: { label_id: 'L_A', text: 'content 1' } },
-            { _id: '2', _score: 0.8, _source: { label_id: 'L_A', text: 'content 2' } },
-            { _id: '3', _score: 0.7, _source: { label_id: 'L_B', text: 'content 3' } },
-            { _id: '4', _score: 0.6, _source: { label_id: 'L_A', text: 'content 4' } }
-        ]
-
-        mockOs.search.mockResolvedValue({
-            body: { hits: { hits } }
-        })
-
-        const { retrieveWithInfo } = await import('./retriever.js')
-
-        const result = await retrieveWithInfo('test query', {
-            os: mockOs,
-            maxPerLabel: 1
-        })
-
-        // Should only return first hit from each label_id
-        expect(result.hits).toHaveLength(2)
-        expect(result.hits[0]!._source.label_id).toBe('L_A')
-        expect(result.hits[1]!._source.label_id).toBe('L_B')
-    })
-
     it('forces specific strategy when requested', async () => {
         mockOs.search.mockResolvedValue({
             body: { hits: { hits: createMockHits(1) } }

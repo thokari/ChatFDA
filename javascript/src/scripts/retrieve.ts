@@ -25,7 +25,6 @@ async function main() {
     const topK = parseInt(getArg(args, "--topK") ?? "20", 10)
     const strategy = (getArg(args, "--strategy") ?? "auto") as any
     const index = getArg(args, "--index") ?? (process.env.INDEX_CHUNKS || "drug-chunks")
-    const maxPerLabel = parseInt(getArg(args, "--maxPerLabel") ?? "1", 10)
     const highlight = !hasFlag(args, "--noHighlight")
     const diag = hasFlag(args, "--diag")
 
@@ -49,7 +48,7 @@ async function main() {
     }
 
     const tCall0 = Date.now()
-    const opts: RetrieveOptions = { topK, filter, highlight, strategy, maxPerLabel, index }
+    const opts: RetrieveOptions = { topK, filter, highlight, strategy, index }
     if (queryVector) opts.queryVector = queryVector
     const { hits, strategy: used } = await retrieveWithInfo(query, opts)
     const callMs = Date.now() - tCall0

@@ -16,8 +16,7 @@ export type RetrieveOptions = {
     sourceFields?: string[]
     highlight?: boolean
     strategy?: "auto" | "knn" | "knn_query" | "script" | "text"
-    maxPerLabel?: number // e.g., 1 to avoid repeats per label
-    queryVector?: number[] | undefined // optional: bypass embedding for timing/debug
+    queryVector?: number[] | undefined
 }
 
 export type RetrieveHit = { _id: string; _score: number; _source: any; highlight?: any }
