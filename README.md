@@ -13,7 +13,7 @@ This project uses publicly available FDA drug label data to help users better un
 
 ## Architecture overview
 ### Data layer
-OpenSearch is the only database. Indices exist for:
+OpenSearch indices exist for:
 - ingestion jobs and event
 - drug labels and their chunks (text segments)
 - metrics
@@ -23,7 +23,7 @@ There is single Next.js app which contains
 - test scripts for retrieval and answering
 - API routes for query and (streaming) response
 ### Frontend
-There are couple of React components that implement Chat and citation cards.
+There are couple of React components that implement chat and citation cards.
 State is maintained via zustand (onyl chat messages right now).
 
 ## Quick start
