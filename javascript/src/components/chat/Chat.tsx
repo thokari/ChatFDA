@@ -3,42 +3,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
 import { CitationList } from "@/components/citations/CitationList"
-import { useChatStore } from "@/store/chat"
-
-function InlineTimer({ active, phase, durationMs }: { active: boolean; phase: 'retrieving' | 'selecting' | 'answering' | 'done' | null; durationMs: number | undefined }) {
-    const [t0, setT0] = useState<number | null>(null)
-    const [now, setNow] = useState<number>(Date.now())
-
-    useEffect(() => {
-        let id: any
-        if (active) {
-            const start = Date.now()
-            setT0(start)
-            id = setInterval(() => setNow(Date.now()), 100)
-        } else {
-            setT0(null)
-        }
-        return () => { if (id) clearInterval(id) }
-    }, [active])
-
-    if (active && t0 != null) {
-        const elapsed = (now - t0) / 1000
-        const label = phase === 'retrieving' ? 'Retrieving relevant labels…' : phase === 'selecting' ? 'Selecting relevant passages…' : 'Answering…'
-        return (
-            <div className="text-sm text-slate-700 px-2 py-1">
-                <span>{label} </span><span className="font-bold">{elapsed.toFixed(1)}s</span>
-            </div>
-        )
-    }
-    if (!active && typeof durationMs === 'number') {
-        return (
-            <div className="text-sm text-slate-700 px-2 py-1">
-                Responded in <span className="font-semibold">{(durationMs / 1000).toFixed(2)}s</span>
-            </div>
-        )
-    }
-    return null
-}
+import { useChatStore, type ChatState } from "@/store/chat"
 
 export default function Chat() {
     const { messages, pending, phase, sendPrompt } = useChatStore()
@@ -110,4 +75,43 @@ export default function Chat() {
             </div>
         </div>
     )
+}
+
+function InlineTimer({ active, phase, durationMs }: {
+    active: boolean
+    phase: ChatState['phase']
+    durationMs: number | undefined
+}) {
+    const [t0, setT0] = useState<number | null>(null)
+    const [now, setNow] = useState<number>(Date.now())
+
+    useEffect(() => {
+        let id: any
+        if (active) {
+            const start = Date.now()
+            setT0(start)
+            id = setInterval(() => setNow(Date.now()), 100)
+        } else {
+            setT0(null)
+        }
+        return () => { if (id) clearInterval(id) }
+    }, [active])
+
+    if (active && t0 != null) {
+        const elapsed = (now - t0) / 1000
+        const label = phase === 'retrieving' ? 'Retrieving relevant labels…' : phase === 'selecting' ? 'Selecting relevant passages…' : 'Answering…'
+        return (
+            <div className="text-sm text-slate-700 px-2 py-1">
+                <span>{label} </span><span className="font-bold">{elapsed.toFixed(1)}s</span>
+            </div>
+        )
+    }
+    if (!active && typeof durationMs === 'number') {
+        return (
+            <div className="text-sm text-slate-700 px-2 py-1">
+                Responded in <span className="font-semibold">{(durationMs / 1000).toFixed(2)}s</span>
+            </div>
+        )
+    }
+    return null
 }

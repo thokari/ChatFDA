@@ -7,7 +7,7 @@ The purpose of this project is quickly prototyping a simple RAG application on c
 ## What is the FDA?
 
 The **U.S. Food and Drug Administration (FDA)** is a government agency responsible for protecting public health by ensuring the safety, efficacy, and security of drugs, biological products, and medical devices.
-This project uses publicly available FDA drug label data to help users better understand medication usage and risks.
+This project uses publicly available FDA drug label data from https://api.fda.gov/drug/label.json.
 
 **Note:** This project targets FDA‑approved pharmaceuticals, not recreational/illicit drugs.
 

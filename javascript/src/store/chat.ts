@@ -13,7 +13,7 @@ export type ChatMessage = {
     }
 }
 
-type ChatState = {
+export type ChatState = {
     messages: ChatMessage[]
     pending: boolean
     phase: 'retrieving' | 'selecting' | 'answering' | 'done' | null
