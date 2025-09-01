@@ -84,7 +84,7 @@ Open Dashboards (default dev user/pass: admin / OS_PASS) and explore Discover/De
 
 - [ ] Deploy OpenSearch on AWS, configure auth  
 - [ ] Deploy frontend on Vercel, connect OpenSearch  
-- [ ] Improve frontend with feedback on request phase/runtime  
+- [x] Improve frontend with feedback on request phase/runtime  
 - [ ] Data analysis: increase topK, prefilter before LLM steps (shingles?)  
 - [ ] Data analysis: try different search algorithms (BM25)  
 - [ ] Improve frontend with an AI supported extended search  
