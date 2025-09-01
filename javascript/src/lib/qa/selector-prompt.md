@@ -7,7 +7,7 @@ Rules
 - Include all relevant information. Dont make the citations too short.
 - Use […] if you decide to omit something inside chunk text, if a contiguous citation would be too long
 - Prefer variety: when many chunks say the same thing, pick only one of them, and include another one that adds a different angle or is materially clearer, even if longer.
-- Avoid near-duplicates (e.g., same text with different manufacturer) unless it adds real value.
+- When multiple chunks are very similar, e.g. only different manufacturer, keep only two, discard the rest.
 - Keep exactly the wording from the label.
 - Output strictly as a single JSON object with shape:
   { "citations": [ { "chunk_id": string, "text": string } ] }

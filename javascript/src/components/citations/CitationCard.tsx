@@ -20,6 +20,7 @@ export type CitationHit = {
             product_ndc?: string[]
             application_number?: string[]
             product_type?: string[]
+            substance_name?: string[]
         }
     }
 }
@@ -39,6 +40,7 @@ export function CitationCard({ hit }: { hit: CitationHit }) {
     const mfg = first(src.openfda?.manufacturer_name)
     const route = first(src.openfda?.route)
     const section = humanizeSection(src.section)
+    const substance = (src.openfda?.substance_name || []).join(", ")
     const date = src.effective_time_date || src.effective_time
     const rawText = src.text ?? ""
     const rxOtc = (() => {
@@ -61,7 +63,11 @@ export function CitationCard({ hit }: { hit: CitationHit }) {
         <article className="rounded-lg border bg-white shadow-sm p-3 space-y-2">
             <header className="flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-semibold text-sky-900">{brand}</h3>
-                {mfg && <span className="text-[11px] text-gray-600">• {mfg}</span>}
+                {substance && (
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-gray-50 text-gray-700 border border-gray-100">
+                        {substance}
+                    </span>
+                )}
                 <div className="ml-auto flex items-center gap-1">
                     {rxOtc && (
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
@@ -83,6 +89,11 @@ export function CitationCard({ hit }: { hit: CitationHit }) {
                 {date && (
                     <span className="text-[10px] px-2 py-0.5 rounded bg-gray-50 text-gray-700 border border-gray-100">
                         {date}
+                    </span>
+                )}
+                {mfg && (
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-gray-50 text-gray-700 border border-gray-100">
+                        {mfg}
                     </span>
                 )}
             </div>

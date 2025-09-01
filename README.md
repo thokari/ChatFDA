@@ -37,6 +37,7 @@ State is maintained via zustand (onyl chat messages right now).
 
 3) Env variables
 - `OS_PASS=58#n#xB*sE8pZUom`
+- `OS_INSECURE_TLS=1`
 - `OPENAI_API_KEY=...`
 
 4) Install JS deps

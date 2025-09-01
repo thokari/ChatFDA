@@ -10,9 +10,8 @@ export default function ExplorerSidebar() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     // always use labels; no index selector
-    const [field, setField] = useState<"generic" | "substance">("generic")
+    const [field, setField] = useState<"substance" | "generic">("substance")
     // Always group by first alpha token
-
     // Build a group key by splitting on non-alphanumerics and picking
     // the first token that starts with a letter; fallback to first token.
     function groupKeyFromLabel(label: string): string {
@@ -22,7 +21,7 @@ export default function ExplorerSidebar() {
         return firstAlpha || tokens[0] || ""
     }
 
-    async function fetchAll(fld: "generic" | "substance") {
+    async function fetchAll(fld: "substance" | "generic") {
         setLoading(true)
         setError(null)
         setItems([])
@@ -35,8 +34,8 @@ export default function ExplorerSidebar() {
         try {
             // cancellation guard if field changes/unmounts
             const abort = { value: false }
-            // attach to closure for cleanup
-            ;(fetchAll as any)._abort = abort
+                // attach to closure for cleanup
+                ; (fetchAll as any)._abort = abort
             do {
                 const params = new URLSearchParams()
                 params.set("size", "100")
@@ -74,25 +73,25 @@ export default function ExplorerSidebar() {
     }
 
     useEffect(() => {
-    // cancel any in-flight loop
-    if ((fetchAll as any)._abort) (fetchAll as any)._abort.value = true
-    fetchAll(field)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // cancel any in-flight loop
+        if ((fetchAll as any)._abort) (fetchAll as any)._abort.value = true
+        fetchAll(field)
     }, [field])
 
     return (
-    <aside className="sticky top-20 h-[calc(100vh-6rem)] overflow-auto border-r border-gray-200 pr-3 dark:border-gray-800" style={{ scrollbarGutter: 'stable' }}>
+        <aside className="sticky top-20 h-[calc(100vh-6rem)] overflow-auto border-r border-gray-200 pr-3 dark:border-gray-800" style={{ scrollbarGutter: 'stable' }}>
+            <div className="text-md text-center mb-2">Available data</div>
             <div className="mb-1 flex items-center justify-between px-3">
-                <div className="text-[10px] uppercase tracking-wide text-gray-600 dark:text-gray-400">Drug label explorer</div>
                 <select
                     className="rounded border border-gray-300 bg-white px-1 py-0.5 text-[11px] text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                     value={field}
                     onChange={(e) => setField(e.target.value as any)}
                     title="Field"
                 >
-                    <option value="generic">generic_name</option>
                     <option value="substance">substance_name</option>
+                    <option value="generic">generic_name</option>
                 </select>
+                <span className="text-xs">label count</span>
             </div>
             {/* always grouped */}
             {error && (
