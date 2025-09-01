@@ -1,6 +1,6 @@
 # ChatFDA
 
-**ChatFDA** is an open-source project aiming to provide a simple chat interface for querying FDA drug label data. The goal is to help users ask questions about drug usage, risks, and other safety information for a curated selection of medications.
+**ChatFDA** is a chat interface for querying FDA drug label data. It answers users questions about drug usage, risks, and other safety information for a curated selection of medications.
 
 The purpose of this project is quickly prototyping a simple RAG application on complex data, exploring technologies (OpenSearch, langchain.js, Next.js and Vercel) and different approaches to prompt engineering, searching, filtering, and quoting.
 
