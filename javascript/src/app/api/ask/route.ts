@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { retrieveWithInfo } from "@/lib/retriever"
-import { answerQuestion } from "@/lib/qa/answerer"
+import { runAsk } from "@/lib/workflow"
 
 export const runtime = "nodejs"
 
@@ -9,7 +8,6 @@ export async function POST(req: NextRequest) {
     if (!q || typeof q !== "string") {
         return NextResponse.json({ error: "q is required" }, { status: 400 })
     }
-    const { hits, strategy } = await retrieveWithInfo(q, { highlight: false, sourceFields: ["*"] })
-    const result = await answerQuestion(q, hits, { maxPerLabel: 1 })
-    return NextResponse.json({ ...result, strategy })
+    const result = await runAsk(q)
+    return NextResponse.json(result)
 }

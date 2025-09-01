@@ -4,7 +4,7 @@ import { Command } from "commander"
 import { makeJobId, getJob, setStatus, type JobParams, preflightTotal, openFdaPreflight, ensureJob, parseSeedsCsv } from "./control.js"
 import { runJob } from "./runner.js"
 import { osClientFromEnv } from "../os-client.js"
-import { createLogger } from "../../utils/log.js"
+import { createLogger } from "@/utils/log"
 
 const log = createLogger("cli")
 

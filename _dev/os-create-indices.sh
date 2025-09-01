@@ -19,4 +19,7 @@ echo
 echo "Creating index: ingest-events"
 "${CURL[@]}" -X PUT "$OS_HOST/ingest-events" --data-binary @opensearch/ingest-events.json
 echo
+echo "Creating index: ask-metrics"
+"${CURL[@]}" -X PUT "$OS_HOST/ask-metrics" --data-binary @opensearch/ask-metrics.json
+echo
 echo "Done."

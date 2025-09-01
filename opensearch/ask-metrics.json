@@ -1,0 +1,35 @@
+{
+  "settings": { "index": { "number_of_shards": 1, "number_of_replicas": 0 } },
+  "mappings": {
+    "dynamic_templates": [
+      { "durations_numbers": { "path_match": "durations.*", "mapping": { "type": "long" } } },
+      { "meta_strings":     { "path_match": "meta.*",      "match_mapping_type": "string",  "mapping": { "type": "keyword", "ignore_above": 512 } } },
+      { "meta_longs":       { "path_match": "meta.*",      "match_mapping_type": "long",    "mapping": { "type": "long" } } },
+      { "meta_doubles":     { "path_match": "meta.*",      "match_mapping_type": "double",  "mapping": { "type": "double" } } },
+      { "meta_bools":       { "path_match": "meta.*",      "match_mapping_type": "boolean", "mapping": { "type": "boolean" } } },
+      { "meta_dates":       { "path_match": "meta.*",      "match_mapping_type": "date",    "mapping": { "type": "date" } } }
+    ],
+    "properties": {
+      "id":       { "type": "keyword" },
+      "time":     { "type": "date" },
+      "q":        { "type": "text", "fields": { "raw": { "type": "keyword", "ignore_above": 512 } } },
+      "status":   { "type": "keyword" },
+      "durations": { "type": "object", "enabled": true, "dynamic": true },
+      "meta":      { "type": "object", "enabled": true, "dynamic": true },
+      "citations": {
+        "type": "object",
+        "properties": {
+          "chunk_id": { "type": "keyword" },
+          "section":  { "type": "keyword" },
+          "label_id": { "type": "keyword" }
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "text", "fields": { "raw": { "type": "keyword", "ignore_above": 512 } } }
+        }
+      }
+    }
+  }
+}

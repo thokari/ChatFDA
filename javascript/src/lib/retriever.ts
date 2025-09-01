@@ -116,9 +116,7 @@ export async function retrieveWithInfo(
 
     for (const { name, body } of strategies) {
         try {
-            if (log.isDebug()) {
-                log.debug("request", { index, strategy: name, body })
-            }
+            log.debug("request", { index, strategy: name, body })
             const tSearch0 = Date.now()
             const res = await os.search({ index, body })
             const searchMs = Date.now() - tSearch0

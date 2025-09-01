@@ -1,7 +1,10 @@
 import { ChatOpenAI } from "@langchain/openai"
 import type { RetrieveHit } from "../retriever.js"
 import { fileURLToPath } from "node:url"
+import { createLogger } from "@/utils/log"
 import { readFile, stat as statAsync } from "node:fs/promises"
+
+const log = createLogger("answerer")
 
 export type AnswerOptions = {
     model?: string
@@ -92,7 +95,7 @@ export async function answerQuestionStream(
 
     const ctx = buildContext(hits, opts)
     const chat = new ChatOpenAI({ model, temperature })
-
+    log.debug("hits used in query", hits)
     const s = await chat.stream([
         { role: "system", content: await getSystemPrompt() },
         { role: "user", content: `Question:\n${query}\n\nExcerpts (full chunk _source):\n${JSON.stringify(ctx, null, 2)}` }

@@ -49,7 +49,7 @@ export async function selectCitations(
         const schema = z.object({
             citations: z.array(z.object({
                 chunk_id: z.string(),
-                section: z.string().optional(),
+                section: z.string().optional().nullable(),
                 text: z.string().min(1)
             }))
         })
@@ -92,7 +92,7 @@ export async function selectCitations(
             cites.push(cite)
         }
         cites = postValidate(cites, candidates)
-        if (log.isDebug()) log.debug("selector.llm", { asked: candidates.length, picked: cites.length })
+        log.debug("selector.llm", { asked: candidates.length, picked: cites.length })
         return { citations: cites }
     } catch (err: any) {
         log.warn("selector error", { error: String(err?.message || err) })
