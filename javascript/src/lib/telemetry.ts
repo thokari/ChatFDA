@@ -33,21 +33,26 @@ export function createTelemetry(q: string) {
     function start(phase: Phase | string) {
         if (!starts.has(phase)) starts.set(phase, now())
     }
+
     function end(phase: Phase | string) {
         const s = starts.get(phase)
         if (s) durations[phase] = now() - s
     }
+
     function addMeta(m: Record<string, any>) {
         Object.assign(meta, m)
     }
+
     function setCitations(items: Array<{ chunk_id?: string; section?: string; label_id?: string }>) {
         citations.splice(0, citations.length, ...items)
     }
+
     function done(ok: boolean, err?: any) {
         end('total')
         status = ok ? 'ok' : 'error'
         if (!ok && err) error = { message: String(err?.message || err) }
     }
+
     function toDoc(): TelemetryDoc {
         return {
             id,

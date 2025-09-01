@@ -101,13 +101,8 @@ async function main() {
             score: Number(h._score?.toFixed?.(3) ?? h._score),
             section: s.section,
             label_id: s.label_id,
-            snippet: (hl && hl.length > 0) ? hl.slice(0, 800) : (s.text?.slice(0, 800) ?? "")
+            text: (hl && hl.length > 0) ? hl.slice(0, 800) : (s.text?.slice(0, 800) ?? "")
         }, null, 2))
-    }
-
-    if (process.env.DEBUG_RETRIEVER === "1") {
-        const totalMs = Date.now() - tMain0
-        console.error(`[retrieve.ts] retrieverMs=${callMs}ms totalMs=${totalMs}ms`)
     }
 }
 

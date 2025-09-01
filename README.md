@@ -1,134 +1,93 @@
 # ChatFDA
 
-**ChatFDA** is an open-source project aiming to provide a simple chat interface for querying FDA drug label data. The goal is to help users ask questions about drug usage, risks, and other safety information for a curated selection of medications.  
-**Note:** This project is focused on FDA-approved pharmaceuticals and does **not** cover recreational or illicit drugs.
+**ChatFDA** is an open-source project aiming to provide a simple chat interface for querying FDA drug label data. The goal is to help users ask questions about drug usage, risks, and other safety information for a curated selection of medications.
 
----
+The purpose of this project is quickly prototyping a simple RAG application on complex data, exploring technologies (OpenSearch, langchain.js, Next.js and Vercel) and different approaches to prompt engineering, searching, filtering, and quoting.
 
 ## What is the FDA?
 
-The **U.S. Food and Drug Administration (FDA)** is a government agency responsible for protecting public health by ensuring the safety, efficacy, and security of drugs, biological products, and medical devices.  
+The **U.S. Food and Drug Administration (FDA)** is a government agency responsible for protecting public health by ensuring the safety, efficacy, and security of drugs, biological products, and medical devices.
 This project uses publicly available FDA drug label data to help users better understand medication usage and risks.
 
----
+**Note:** This project targets FDA‑approved pharmaceuticals, not recreational/illicit drugs.
 
-## Project Status
+## Architecture overview
+### Data layer
+OpenSearch is the only database. Indices exist for:
+- ingestion jobs and event
+- drug labels and their chunks (text segments)
+- metrics
+### Backend
+There is single Next.js app which contains
+- scripts for data ingestion
+- test scripts for retrieval and answering
+- API routes for query and (streaming) response
+### Frontend
+There are couple of React components that implement Chat and citation cards.
+State is maintained via zustand (onyl chat messages right now).
 
-- **Backend setup**: OpenSearch (for search/indexing) and supporting scripts are ready.
-- **Data ingestion**: Not yet run—no drug data is indexed by default.
-- **Frontend**: Not implemented yet.
-- **.env file**: Required for secrets and configuration (see below).
+## Quick start
 
----
+1) Prereqs
+- Docker (for OpenSearch + Dashboards)
+- Node.js 20+
 
-## Installation & Setup
+2) Boot OpenSearch
+- From `./_dev` run: `docker compose up -d`
 
-### 1. Clone the repository
+3) Env variables
+- `OS_PASS=58#n#xB*sE8pZUom`
+- `OPENAI_API_KEY=...`
 
-```sh
-git clone https://github.com/yourusername/ChatFDA.git
-cd ChatFDA
-```
+4) Install JS deps
+- `cd javascript`
+- `npm install`
 
-### 2. Prerequisites
+5) Dev server
+- `npm run dev` then open http://localhost:3000
 
-- [Docker](https://www.docker.com/) (for OpenSearch)
-- [Node.js 20+](https://nodejs.org/)
-- [pnpm](https://pnpm.io/) or [npm](https://www.npmjs.com/) (for JS dependencies)
+6) Tests
+- `npm run test`
+- `npm run test:watch`
 
-### 3. Environment Variables
+## Using npm scripts with parameters
 
-Create a `.env` file in the project root with the following content:
+All scripts in `javascript/package.json` accept extra flags after `--` and forward them to the underlying TS commands.
 
-```env
-OS_PASS="58#n#xB*sE8pZUom"
-OPENAI_API_KEY=<your-openai-api-key>
-```
+Examples (run inside `javascript`):
 
-- `OS_PASS` is the OpenSearch admin password (provided for development).
-- `OPENAI_API_KEY` is your [OpenAI API key](https://platform.openai.com/account/api-keys).
+- Ask once
+	- `npm run ask -- --q "pregnancy safe pain reliever" --topK 3`
 
-### 4. Start OpenSearch
+- Retrieve only
+	- `npm run retrieve -- --q "ibuprofen pregnancy" --topK 12`
 
-From the `_dev` directory, run:
+- Scan label fields
+	- `npm run scan:fields`
 
-```sh
-docker compose up -d
-```
+- Ingestion CLI
+	- Check availability
+		- `npm run ingest -- check --ingredient clozapine --route ORAL`
+	- Start ingestion
+		- `npm run ingest -- start --ingredient clozapine --route ORAL --limit 100`
+	- Start batch from CSV (repo path: `seeds/`)
+		- `npm run ingest -- start-batch --file ../seeds/drug-seeds-10.csv --limit 100 --updatedSince 20240101 -v`
 
-This will start OpenSearch and OpenSearch Dashboards on your machine.
+## OpenSearch dashboards
 
-### 5. Install Dependencies
+Indices used during dev: `ingest-jobs`, `ingest-events`, `drug-labels`, `drug-chunks`, `ask-metrics`.
 
-```sh
-cd src/javascript
-pnpm install
-# or
-npm install
-```
-
-### 6. (Optional) Run Checks and Ingestion
-
-Ensure you have a .env in the repo root with OPENAI_API_KEY=... (the CLI loads the root .env regardless of where you run it from).
-
-Go to the JS root:
-```sh
-cd src/javascript
-```
-
-- Check availability on openFDA (no indexing yet):
-```sh
-node --loader ts-node/esm lib/job/cli.ts check --ingredient naproxen --route ORAL
-```
-
-- Start ingestion (fetch → index labels → chunk → embed → index chunks):
-```sh
-node --loader ts-node/esm lib/job/cli.ts start --ingredient naproxen --route ORAL --limit 100
-```
-
-Other substance examples with rich labels (use ORAL unless noted):
-- IBUPROFEN
-- ACETAMINOPHEN
-- AMOXICILLIN
-- METFORMIN
-- ATORVASTATIN
-- CLOZAPINE
-- ISOTRETINOIN
-- AMIODARONE
-
-Example:
-```sh
-node --loader ts-node/esm lib/job/cli.ts check --ingredient clozapine --route ORAL
-node --loader ts-node/esm lib/job/cli.ts start --ingredient clozapine --route ORAL --limit 100
-```
-
-Monitor in OpenSearch Dashboards (Discover/Dev Tools) using indices:
-- ingest-jobs, ingest-events, drug-labels, drug-chunks
----
+Open Dashboards (default dev user/pass: admin / OS_PASS) and explore Discover/Dev Tools.
 
 ## Roadmap
 
-- [x] Backend setup (OpenSearch, scripts)
-- [x] Data ingestion and indexing
-- [ ] Chat frontend (web interface)
-- [ ] Natural language Q&A over drug data
-
----
-
-## Disclaimer
-
-This project is for educational and informational purposes only.  
-It is **not** a substitute for professional medical advice.  
-All data is sourced from the FDA and refers to approved pharmaceuticals, not recreational or illicit substances.
-
----
+- [ ] Deploy OpenSearch on AWS, configure auth  
+- [ ] Deploy frontend on Vercel, connect OpenSearch  
+- [ ] Improve frontend with feedback on request phase/runtime  
+- [ ] Data analysis: increase topK, prefilter before LLM steps (shingles?)  
+- [ ] Data analysis: try different search algorithms (BM25)  
+- [ ] Improve frontend with an AI supported extended search  
 
 ## License
 
-ISC License
-
----
-
-## Contributing
-
-Contributions are welcome! Please open issues or pull requests as you see fit.
+ISC

@@ -26,6 +26,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
+            <head>
+                {/* Prevent search engine indexing for the public demo */}
+                <meta name="robots" content="noindex,nofollow" />
+            </head>
             <body className={`${sans.className} ${mono.variable} antialiased bg-sky-50 text-slate-900 min-h-screen flex flex-col`}>
                 <header className="sticky top-0 z-30 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-slate-200">
                     <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-3 flex items-center gap-4">
@@ -35,6 +39,12 @@ export default function RootLayout({
                         </nav>
                     </div>
                 </header>
+                {/* Demo disclaimer banner */}
+                <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-[12px]">
+                    <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-2">
+                        Experimental demo for educational purposes only. Not medical advice. Verify with official FDA labeling and a licensed professional.
+                    </div>
+                </div>
                 <main className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 flex-1">
                     {children}
                 </main>
