@@ -1,10 +1,9 @@
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
 
 // Tunables
-export const DEFAULT_MIN_SECTION_LEN = 120 // ignore very short fields
 export const DEFAULT_INCLUDE_TABLES = false
 export const CHUNK_SIZE = 2000
-export const CHUNK_OVERLAP = 200
+export const CHUNK_OVERLAP = 300
 
 // Curated allowlist of common prose sections (extend as needed)
 export const ALLOWLIST = new Set<string>([
@@ -39,7 +38,6 @@ const splitter = new RecursiveCharacterTextSplitter({
 
 export type ChunkSectionsOptions = {
     includeTables?: boolean
-    minSectionLen?: number
     extraAllow?: string[]
     extraBlock?: string[]
 }
@@ -78,10 +76,12 @@ function shouldIncludeField(name: string, text: string, opts: Required<ChunkSect
     if (EXCLUDE.has(name)) return false
     if (!opts.includeTables && name.endsWith("_table")) return false
     if (opts.extraBlock.includes(name)) return false
-    if (opts.extraAllow.includes(name)) return text.length >= opts.minSectionLen
-    if (ALLOWLIST.has(name)) return text.length >= opts.minSectionLen
-    // Fallback for unexpected prose sections
-    return text.length >= opts.minSectionLen
+    // If caller explicitly allows, include regardless of length
+    if (opts.extraAllow.includes(name)) return true
+    // Include curated prose sections
+    if (ALLOWLIST.has(name)) return true
+    // Fallback: include other non-empty fields (unexpected prose)
+    return text.trim().length > 0
 }
 
 export async function chunkSections(
@@ -90,7 +90,6 @@ export async function chunkSections(
 ) {
     const opts: Required<ChunkSectionsOptions> = {
         includeTables: options.includeTables ?? DEFAULT_INCLUDE_TABLES,
-        minSectionLen: options.minSectionLen ?? DEFAULT_MIN_SECTION_LEN,
         extraAllow: options.extraAllow ?? [],
         extraBlock: options.extraBlock ?? [],
     }
@@ -104,7 +103,6 @@ export async function chunkSections(
 
     // Preserve verbatim content from API for both storage and embedding
     const preserved = text
-    if (preserved.length < opts.minSectionLen) continue
 
     const chunks = await splitter.splitText(preserved)
     const total = chunks.length
@@ -115,9 +113,10 @@ export async function chunkSections(
 }
 
 // Embedding-only prefix for section. Stored text stays verbatim.
-export function embeddingTextForChunk(text: string, meta: ChunkMeta) {
+export function embeddingTextForChunk(text: string, meta: ChunkMeta, tags: string[] = []) {
     const sec = humanizeSection(meta.section)
-    return `[Section: ${sec}] ${text}`
+    const tagsPart = tags.length ? tags.map(t => `[${t}]`).join(" ") : "[]"
+    return `${tagsPart} [Section: ${sec}] ${text}`
 }
 
 export function humanizeSection(section?: string): string {

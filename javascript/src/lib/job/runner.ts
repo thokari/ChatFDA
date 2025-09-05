@@ -189,13 +189,23 @@ export async function runJob(jobId: string, deps: Deps = {}) {
             const batch = todo.slice(i, i + B)
             const tEmb0 = Date.now()
             const vecs = await pRetry(
-                () => embedder.embedDocuments(batch.map(b => embeddingTextForChunk(b.text, {
-                    section: b.section,
-                    chunk_seq: b.chunk_seq,
-                    chunk_total: b.chunk_total,
-                    is_first: b.is_first,
-                    is_last: b.is_last,
-                }))),
+                () => embedder.embedDocuments(batch.map(b => {
+                    const tags: string[] = []
+                    const subs = (b.openfda?.substance_name_lc ?? b.openfda?.substance_name ?? []) as string[]
+                    const gen = (b.openfda?.generic_name ?? []) as string[]
+                    const brand = (b.openfda?.brand_name ?? []) as string[]
+                    const route = (b.openfda?.route_lc ?? b.openfda?.route ?? []) as string[]
+                    const drug = (subs[0] || gen[0] || brand[0])?.toString()?.toLowerCase()
+                    if (drug) tags.push(`Drug: ${drug}`)
+                    if (route[0]) tags.push(`Route: ${route[0]}`)
+                    return embeddingTextForChunk(b.text, {
+                        section: b.section,
+                        chunk_seq: b.chunk_seq,
+                        chunk_total: b.chunk_total,
+                        is_first: b.is_first,
+                        is_last: b.is_last,
+                    }, tags)
+                })),
                 { retries: 5 }
             )
             const embMs = Date.now() - tEmb0

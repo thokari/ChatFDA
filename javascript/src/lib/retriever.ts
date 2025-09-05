@@ -2,6 +2,7 @@ import { OpenAIEmbeddings } from "@langchain/openai"
 import type { Embedder, OsLike } from "./types"
 import { osClientFromEnv } from "./os-client"
 import { createLogger } from "../utils/log"
+import { CHUNK_SIZE } from "./chunking"
 
 export const DEFAULT_TOPK = 12
 
@@ -22,6 +23,13 @@ export type RetrieveOptions = {
 export type RetrieveHit = { _id: string; _score: number; _source: any; highlight?: any }
 
 const log = createLogger("retriever")
+
+export type HybridOptions = RetrieveOptions & {
+    textK?: number
+    annK?: number
+    rrfC?: number
+    window?: number
+}
 
 export async function retrieveWithInfo(
     query: string,
@@ -139,6 +147,99 @@ export async function retrieveWithInfo(
         }
     }
     return { hits: [], strategy: want }
+}
+
+// RRF fusion for multiple ranked lists. Returns unique hits by _id, keeping first seen _source/highlight.
+export function rrfFuse(lists: RetrieveHit[][], c: number = 60, max: number = DEFAULT_TOPK): RetrieveHit[] {
+    const scoreById = new Map<string, number>()
+    const exemplarById = new Map<string, RetrieveHit>()
+    for (const list of lists) {
+        for (let i = 0; i < list.length; i++) {
+            const h = list[i]!
+            const id = h._id
+            const add = 1 / (c + (i + 1))
+            scoreById.set(id, (scoreById.get(id) ?? 0) + add)
+            if (!exemplarById.has(id)) exemplarById.set(id, h)
+        }
+    }
+    const fused = Array.from(scoreById.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, max)
+        .map(([id]) => exemplarById.get(id)!)
+    return fused
+}
+
+// Hybrid retrieval: run text BM25 and ANN in parallel, fuse via RRF. No per-label limiting.
+export async function retrieveHybrid(
+    query: string,
+    opts: HybridOptions = {}
+): Promise<{ hits: RetrieveHit[]; info: { strategy: "hybrid"; textCount: number; annCount: number; embedded: boolean } }> {
+    const os = opts.os ?? osClientFromEnv()
+    const index = opts.index ?? (process.env.INDEX_CHUNKS || "drug-chunks")
+    const topK = opts.topK ?? DEFAULT_TOPK
+    const textK = opts.textK ?? Math.max(200, topK * 10)
+    const annK = opts.annK ?? Math.max(200, topK * 10)
+    const cap = opts.cap ?? topK
+    const rrfC = opts.rrfC ?? 60
+    const window = opts.window ?? Math.max(textK, annK)
+    const _source = opts.sourceFields ?? ["chunk_id", "label_id", "section", "text", "openfda"]
+
+    // Embed once or use provided
+    let vec: number[] | undefined
+    let embedded = false
+    if (opts.queryVector && Array.isArray(opts.queryVector) && opts.queryVector.length) {
+        vec = opts.queryVector
+    } else {
+        const embedder: Embedder = opts.embedder ?? (new OpenAIEmbeddings({ model: "text-embedding-3-small" }) as any)
+        vec = (await embedder.embedDocuments([query]))[0]!
+        if (!vec) throw new Error("Failed to embed query")
+        embedded = true
+    }
+
+    const highlight = opts.highlight
+        ? { fields: { text: { fragment_size: CHUNK_SIZE, number_of_fragments: 1, no_match_size: CHUNK_SIZE } } }
+        : undefined
+
+    const sourceFilter = { includes: _source, excludes: ["embedding"] }
+
+    // Build requests
+    const textBody = {
+        size: textK,
+        query: withFilter(opts.filter, { match: { text: query } }),
+        _source: sourceFilter,
+        highlight,
+    }
+    const annBody = {
+        size: annK,
+        knn: {
+            field: "embedding",
+            query_vector: vec,
+            k: annK,
+            num_candidates: opts.numCandidates ?? Math.max(500, annK * 2),
+            filter: toKnnFilter(opts.filter),
+        },
+        _source: sourceFilter,
+        highlight,
+    }
+
+    // Execute in parallel
+    const [textRes, annRes] = await Promise.allSettled([
+        os.search({ index, body: textBody }),
+        os.search({ index, body: annBody }),
+    ])
+
+    const getHits = (res: any): RetrieveHit[] => {
+        const bodyAny: any = (res as any).body ?? res
+        return bodyAny?.hits?.hits ?? res?.hits?.hits ?? []
+    }
+
+    const textHits = textRes.status === "fulfilled" ? getHits(textRes.value) : []
+    const annHits = annRes.status === "fulfilled" ? getHits(annRes.value) : []
+
+    const fused = rrfFuse([textHits, annHits], rrfC, Math.max(window, cap))
+    const finalHits = fused.slice(0, cap)
+
+    return { hits: finalHits, info: { strategy: "hybrid", textCount: textHits.length, annCount: annHits.length, embedded } }
 }
 
 // Helpers

@@ -165,8 +165,8 @@ describe('runner', () => {
         expect(secondBulkCall.body).toContain('L1#warnings#0')
         expect(secondBulkCall.body).toContain('do not exceed dose')
 
-        // Should have called embedDocuments for the chunk
-        expect(embedDocumentsMock).toHaveBeenCalledWith(['[Section: Warnings] do not exceed dose'])
+    // Should have called embedDocuments for the chunk with tags (drug and route)
+    expect(embedDocumentsMock).toHaveBeenCalledWith(['[Drug: ibuprofen] [Route: oral] [Section: Warnings] do not exceed dose'])
 
         // Should have updated the job
         expect(updateJobMock).toHaveBeenCalled()

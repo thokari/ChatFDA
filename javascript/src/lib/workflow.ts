@@ -31,9 +31,9 @@ export async function* streamAskEvents(q: string): AsyncGenerator<AskEvent, void
             const cid = String(h._source?.chunk_id ?? h._id)
             byId.set(cid, h)
         }
-    tel.start('select')
-    const sel = await selectCitations(q, hits)
-    tel.end('select')
+        tel.start('select')
+        const sel = await selectCitations(q, hits)
+        tel.end('select')
         const selectedHits = sel.citations
             .map(c => {
                 const base = byId.get(c.chunk_id)
@@ -50,22 +50,22 @@ export async function* streamAskEvents(q: string): AsyncGenerator<AskEvent, void
         }))
         yield { type: 'citations', data: selectedHits }
 
-    tel.start('answer')
-    const { stream, model } = await answerQuestionStream(q, selectedHits)
-    tel.addMeta({ model })
+        tel.start('answer')
+        const { stream, model } = await answerQuestionStream(q, selectedHits)
+        tel.addMeta({ model })
         yield { type: 'meta', data: { model } }
 
         for await (const token of stream) {
             yield { type: 'token', data: token }
         }
-    tel.end('answer')
-    tel.done(true)
-    await tel.flush()
-    yield { type: 'done', data: { ok: true } }
+        tel.end('answer')
+        tel.done(true)
+        await tel.flush()
+        yield { type: 'done', data: { ok: true } }
     } catch (err: any) {
-    tel.done(false, err)
-    await tel.flush()
-    yield { type: 'error', data: { message: err?.message ?? 'failed' } }
+        tel.done(false, err)
+        await tel.flush()
+        yield { type: 'error', data: { message: err?.message ?? 'failed' } }
     }
 }
 

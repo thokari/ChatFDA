@@ -348,3 +348,86 @@ describe('retriever', () => {
         ).rejects.toThrow('Embedding API failed')
     })
 })
+
+describe('retrieveHybrid', () => {
+    let mockOs: MockOsClient
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockOs = createMockOsClient()
+        mockEmbedDocuments.mockResolvedValue([Array(1536).fill(0.01)])
+    })
+
+    afterEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('fuses text and ANN via RRF and returns capped results', async () => {
+        const textHits = makeHits('t', 5)
+        const annHits = makeHits('a', 5)
+        annHits[0]._id = textHits[0]._id
+
+        mockOs.search.mockImplementation(async (arg: any) => {
+            if (arg.body?.knn) {
+                return { body: { hits: { hits: annHits } } }
+            }
+            return { body: { hits: { hits: textHits } } }
+        })
+
+        const { retrieveHybrid } = await import('./retriever.js')
+        const { hits, info } = await retrieveHybrid('ibuprofen dosing', {
+            os: mockOs,
+            topK: 6,
+            textK: 5,
+            annK: 5,
+            rrfC: 60,
+            highlight: true,
+        })
+
+        expect(info.strategy).toBe('hybrid')
+        expect(info.textCount).toBe(5)
+        expect(info.annCount).toBe(5)
+        expect(hits.length).toBe(6)
+        expect(hits[0]!._id).toBe(textHits[0]._id)
+        expect(hits[0]!.highlight?.text?.[0]).toContain('<em>')
+    })
+
+    it('works when one branch returns empty', async () => {
+        mockOs.search.mockImplementation(async (arg: any) => {
+            if (arg.body?.knn) {
+                return { body: { hits: { hits: [] } } }
+            }
+            return { body: { hits: { hits: makeHits('t', 3) } } }
+        })
+
+        const { retrieveHybrid } = await import('./retriever.js')
+        const { hits } = await retrieveHybrid('boxed warning', { os: mockOs, topK: 2, textK: 3, annK: 3 })
+        expect(hits.length).toBe(2)
+        expect(hits[0]!._id.startsWith('t_')).toBe(true)
+    })
+
+    it('uses provided queryVector without embedding call', async () => {
+        mockOs.search.mockResolvedValue({ body: { hits: { hits: makeHits('t', 2) } } })
+
+        const queryVector = Array(1536).fill(0.02)
+        const { retrieveHybrid } = await import('./retriever.js')
+
+        await retrieveHybrid('any', { os: mockOs, queryVector, topK: 1 })
+        expect(mockEmbedDocuments).not.toHaveBeenCalled()
+    })
+})
+
+function makeHits(prefix: string, count: number): any[] {
+    return Array.from({ length: count }, (_, i) => ({
+        _id: `${prefix}_${i}`,
+        _score: 1 - i * 0.01,
+        _source: {
+            chunk_id: `${prefix}_chunk_${i}`,
+            label_id: `${prefix}_label_${Math.floor(i / 2)}`,
+            section: 'warnings',
+            text: `content ${prefix} ${i}`,
+            openfda: { brand_name: [`Brand${i}`], generic_name: [`Generic${i}`], route: ['ORAL'] },
+        },
+        highlight: { text: [`<em>${prefix}</em> ${i}`] },
+    }))
+}
