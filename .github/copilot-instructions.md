@@ -11,3 +11,7 @@ We use 4 spaces indentation for typescript, but for configuration files, we keep
 ## Comments
 When there are comments in the code, you keep them as they are, unless you need to update them to reflect changes in the code. Do not add comments to describe what changed, or refer to deleted code. Use them judicously, and prefer factoring to smaller functions instead.
 
+# Domain
+## FDA Labels and Chunks
+The idea of deduplicating chunks by label does not make a lot of sense, because chunks are segments of text from a single label. So two chunks from a label are probably different, and both relevant to a query, if this occurs.
+Deduplication in the context of this data means that we remove or rank lower chunks that have similar text, but come from a different manufacturer. The challenge is getting more diversity into the chunks...

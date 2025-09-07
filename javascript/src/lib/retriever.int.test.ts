@@ -65,4 +65,3 @@ maybeDescribe('integration: OpenSearch retrieval', () => {
         }
     })
 })
-

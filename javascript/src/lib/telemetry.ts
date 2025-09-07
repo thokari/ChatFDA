@@ -65,6 +65,7 @@ export function createTelemetry(q: string) {
             error,
         }
     }
+    
     async function flush(index = 'ask-metrics') {
         const client = osClientFromEnv()
         const body = toDoc()

@@ -1,3 +1,4 @@
+
 import { OpenAIEmbeddings } from "@langchain/openai"
 import type { Embedder, OsLike } from "./types"
 import { osClientFromEnv } from "./os-client"
@@ -149,26 +150,6 @@ export async function retrieveWithInfo(
     return { hits: [], strategy: want }
 }
 
-// RRF fusion for multiple ranked lists. Returns unique hits by _id, keeping first seen _source/highlight.
-export function rrfFuse(lists: RetrieveHit[][], c: number = 60, max: number = DEFAULT_TOPK): RetrieveHit[] {
-    const scoreById = new Map<string, number>()
-    const exemplarById = new Map<string, RetrieveHit>()
-    for (const list of lists) {
-        for (let i = 0; i < list.length; i++) {
-            const h = list[i]!
-            const id = h._id
-            const add = 1 / (c + (i + 1))
-            scoreById.set(id, (scoreById.get(id) ?? 0) + add)
-            if (!exemplarById.has(id)) exemplarById.set(id, h)
-        }
-    }
-    const fused = Array.from(scoreById.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, max)
-        .map(([id]) => exemplarById.get(id)!)
-    return fused
-}
-
 // Hybrid retrieval: run text BM25 and ANN in parallel, fuse via RRF. No per-label limiting.
 export async function retrieveHybrid(
     query: string,
@@ -242,16 +223,82 @@ export async function retrieveHybrid(
     return { hits: finalHits, info: { strategy: "hybrid", textCount: textHits.length, annCount: annHits.length, embedded } }
 }
 
-// Helpers
+// Safe dot product for two vectors
+function dotProduct(a: number[] | undefined, b: number[] | undefined): number {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return 0
+    let sum = 0
+    for (let i = 0; i < a.length; i++) sum += a[i]! * b[i]!
+    return sum
+}
+
+// RRF fusion for multiple ranked lists. Returns unique hits by _id, keeping first seen _source/highlight.
+export function rrfFuse(lists: RetrieveHit[][], c: number = 60, max: number = DEFAULT_TOPK): RetrieveHit[] {
+    const scoreById = new Map<string, number>()
+    const exemplarById = new Map<string, RetrieveHit>()
+    for (const list of lists) {
+        for (let i = 0; i < list.length; i++) {
+            const h = list[i]!
+            const id = h._id
+            const add = 1 / (c + (i + 1))
+            scoreById.set(id, (scoreById.get(id) ?? 0) + add)
+            if (!exemplarById.has(id)) exemplarById.set(id, h)
+        }
+    }
+    const fused = Array.from(scoreById.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, max)
+        .map(([id]) => exemplarById.get(id)!)
+    return fused
+}
+
+/**
+ * Max Marginal Relevance (MMR) diversity selection.
+ * Selects top-k items balancing query relevance and intra-set diversity.
+ *
+ * @param candidates Array of { id, qSim, embedding } where:
+ *   - id: string (unique doc id)
+ *   - qSim: number (query similarity, e.g. dot/cosine)
+ *   - embedding: number[] (L2-normalized vector)
+ * @param k Number of items to select
+ * @param lambda Tradeoff between relevance (lambda) and diversity (1-lambda), 0.5-0.8 typical
+ * @returns Array of selected candidates (same shape as input)
+ */
+export function mmrDiversify(
+    candidates: { id: string; qSim: number; embedding: number[] }[],
+    k: number,
+    lambda = 0.7
+) {
+    const selected: typeof candidates = []
+    const remain = [...candidates]
+    while (selected.length < k && remain.length) {
+        if (selected.length === 0) {
+            // pick highest query similarity first
+            remain.sort((a, b) => b.qSim - a.qSim)
+            selected.push(remain.shift()!)
+            continue
+        }
+        let bestIdx = 0
+        let bestScore = -Infinity
+        for (let i = 0; i < remain.length; i++) {
+            const d = remain[i]!
+            let maxSimToSelected = -Infinity
+            for (const s of selected) {
+                // cosine since normalized
+                const e = d.embedding!; const f = s.embedding!
+                const dot = dotProduct(e, f)
+                if (dot > maxSimToSelected) maxSimToSelected = dot
+            }
+            const mmr = lambda * d.qSim - (1 - lambda) * maxSimToSelected
+            if (mmr > bestScore) { bestScore = mmr; bestIdx = i }
+        }
+        selected.push(remain.splice(bestIdx, 1)[0]!)
+    }
+    return selected
+}
+
 function toKnnFilter(filter?: Record<string, any>) {
     if (!filter || Object.keys(filter).length === 0) return undefined
     return Object.entries(filter).map(([k, v]) => ({ term: { [k]: v } }))
-}
-
-function toFilter(filter?: Record<string, any>) {
-    if (!filter || Object.keys(filter).length === 0) return undefined
-    const terms = Object.entries(filter).map(([k, v]) => ({ term: { [k]: v } }))
-    return { bool: { filter: terms } }
 }
 
 function withFilter(filter?: Record<string, any>, baseQuery?: any) {
