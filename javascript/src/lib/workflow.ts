@@ -1,5 +1,5 @@
 import type { RetrieveHit } from '@/lib/retriever'
-import { retrieveWithInfo } from '@/lib/retriever'
+import { retrieveHybrid, retrieveWithInfo } from '@/lib/retriever'
 import { selectCitations } from '@/lib/qa/selector'
 import { answerQuestion, answerQuestionStream } from '@/lib/qa/answerer'
 import { createTelemetry } from '@/lib/telemetry'
@@ -20,10 +20,10 @@ export async function* streamAskEvents(q: string): AsyncGenerator<AskEvent, void
 
     const tel = createTelemetry(q)
     tel.start('retrieve')
-    const { hits, strategy } = await retrieveWithInfo(q, { highlight: false, sourceFields: ['*'] })
+    const { hits, info } = await retrieveHybrid(q, { highlight: false, sourceFields: ['*'] })
     tel.end('retrieve')
-    tel.addMeta({ strategy })
-    yield { type: 'retrieval', data: { strategy, total: hits.length } }
+    tel.addMeta({ strategy: info.strategy })
+    yield { type: 'retrieval', data: { strategy: info.strategy, total: hits.length } }
 
     try {
         const byId = new Map<string, RetrieveHit>()

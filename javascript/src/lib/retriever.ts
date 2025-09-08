@@ -154,7 +154,10 @@ export async function retrieveWithInfo(
 export async function retrieveHybrid(
     query: string,
     opts: HybridOptions = {}
-): Promise<{ hits: RetrieveHit[]; info: { strategy: "hybrid"; textCount: number; annCount: number; embedded: boolean } }> {
+): Promise<{ 
+    hits: RetrieveHit[]
+    info: { strategy: "hybrid"; textCount: number; annCount: number; embedded: boolean } 
+}> {
     const os = opts.os ?? osClientFromEnv()
     const index = opts.index ?? (process.env.INDEX_CHUNKS || "drug-chunks")
     const topK = opts.topK ?? DEFAULT_TOPK
