@@ -24,7 +24,7 @@ There is single Next.js app which contains
 - API routes for query and (streaming) response
 ### Frontend
 There are couple of React components that implement chat and citation cards.
-State is maintained via zustand (onyl chat messages right now).
+State (chat messages) is maintained via zustand.
 
 ## Quick start
 
