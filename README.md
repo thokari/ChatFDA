@@ -85,7 +85,9 @@ Open Dashboards (default dev user/pass: admin / OS_PASS) and explore Discover/De
 - [ ] End-to-end tests against selector to check data quality  
 - [x] Frontend: feedback on request phase/runtime  
 - [ ] Data analysis: increase topK, prefilter before LLM steps (shingles?)  
-- [ ] Data analysis: try different search algorithms (BM25, on full label text?)  
+- [ ] Data analysis: try different search algorithms (BM25 on chunks)  
+- [ ] Unit test or library use for MMR algorithm  
+- [ ] Gold data collection via the UI  
 - [ ] Frontend: AI supported extended search  
 - [ ] Deploy OpenSearch on AWS, configure auth  
 - [ ] Deploy frontend on Vercel, connect OpenSearch  
